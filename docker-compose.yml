@@ -1,0 +1,79 @@
+include:
+  - caddy/docker-compose.yml
+  - forgejo/docker-compose.yml
+  - homepage/docker-compose.yml
+  - n8n/docker-compose.yml
+  - uptime-kuma/docker-compose.yml
+  - langfuse/docker-compose.yml
+
+networks:
+  dev-network:
+    name: dev-network
+    driver: bridge
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: postgres
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1.5G    # Límite seguro para Postgres
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - dev-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M    # Redis maneja colas, no necesita tanta RAM
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - dev-network
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - /data/docker/minio:/data
+    networks:
+      - dev-network
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
+    restart: unless-stopped
+    volumes:
+      - /data/docker/mailpit:/data
+    networks:
+      - dev-network

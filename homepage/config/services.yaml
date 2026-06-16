@@ -1,0 +1,60 @@
+---
+- Infraestructura Base:
+    - Portainer:
+        icon: portainer
+        href: https://docker.kime.lan
+        description: Gestor de Contenedores
+        server: my-server
+        container: portainer
+
+    - Caddy:
+        icon: caddy
+        href: http://192.168.100.111:80
+        description: Reverse Proxy
+        server: my-server
+        container: caddy
+
+    - Forgejo:
+        icon: forgejo
+        href: http://192.168.100.111:3010
+        description: Servidor Git Local
+        server: my-server
+        container: forgejo
+
+- Herramientas de Desarrollo:
+    - n8n:
+        icon: n8n
+        href: http://192.168.100.111:5678
+        description: Automatización de Workflows
+        server: my-server
+        container: n8n
+
+    - MinIO:
+        icon: minio
+        href: http://192.168.100.111:9001
+        description: Almacenamiento de Objetos S3
+        server: my-server
+        container: minio
+
+    - Mailpit:
+        icon: mailpit
+        href: http://192.168.100.111:8025
+        description: Servidor de correo de pruebas
+        server: my-server
+        container: mailpit
+
+- Mis Aplicaciones & APIs:
+    - API Kodama:
+        icon: nodejs
+        href: http://192.168.100.111:4000/status # Cambialo por el puerto real de tu API
+        description: Multi-tenant API Core
+        server: my-server
+        container: kodama-api # El nombre exacto del contenedor si corre en Docker
+        # Widget para verificar si responde 200 OK:
+        widget:
+          type: customapi
+          url: http://192.168.100.111:4000/api/health # Tu endpoint de salud
+          mappings:
+            - status:
+                value: OK
+                color: green

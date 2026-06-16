@@ -1,0 +1,13 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/settings/
+
+providers:
+  openweathermap: openweathermapapikey
+  weatherapi: weatherapiapikey
+
+# Configuraciones de red seguras
+disableStatusChecking: false
+layout:
+  services:
+    style: expanded

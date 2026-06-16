@@ -1,0 +1,36 @@
+networks:
+  dev-network:
+    external: true
+
+services:
+  langfuse-web:
+    image: langfuse/langfuse:2
+    container_name: langfuse-web
+    depends_on:
+      - langfuse-worker
+    ports:
+      - "3030:3000" # Acceso web en el puerto 3030 de tu server
+    environment:
+      - NODE_ENV=production
+      - NEXTAUTH_URL=http://localhost:3030
+      - NEXTAUTH_SECRET=un_secreto_super_aleatorio_local_1234
+      - SALT=otra_clave_para_hashing_local_5678
+      
+      # Conexión al Postgres compartido (apuntando al schema langfuse)
+      - DATABASE_URL=postgresql://postgres:postgres_password_local@postgres:5432/postgres?schema=langfuse
+      
+      # Desactivar telemetría externa si preferís máxima privacidad
+      - TELEMETRY_ENABLED=false
+    restart: unless-stopped
+    networks:
+      - dev-network
+
+  langfuse-worker:
+    image: langfuse/langfuse-worker:2
+    container_name: langfuse-worker
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres_password_local@postgres:5432/postgres?schema=langfuse
+    restart: unless-stopped
+    networks:
+      - dev-network

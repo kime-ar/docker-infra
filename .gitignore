@@ -1,0 +1,26 @@
+# ==========================================
+# Datos y Volúmenes de Contenedores (Ignorar)
+# ==========================================
+data/
+
+# Logs e históricos del sistema
+**/logs/
+**/log/
+*.log
+**/queues/
+
+# Evitar trabas con archivos de bases de datos embebidas
+*.db
+*.db-shm
+*.db-wal
+*.bolt
+*.ldb
+
+# ==========================================
+# Archivos de Seguridad y Credenciales
+# ==========================================
+**/ssh/
+**/jwt/
+.env
+**/.env
+**/.env.local

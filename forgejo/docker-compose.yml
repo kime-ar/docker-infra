@@ -1,0 +1,25 @@
+networks:
+  dev-network:
+    external: true
+
+services:
+  server:
+    image: codeberg.org/forgejo/forgejo:9
+    container_name: forgejo
+    restart: always
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      # Inyección dinámica de secretos de Forgejo
+      - FORGEJO__security__INTERNAL_TOKEN=${FORGEJO_INTERNAL_TOKEN}
+      - FORGEJO__oauth2__JWT_SECRET=${FORGEJO_JWT_SECRET}
+      - FORGEJO__server__LFS_JWT_SECRET=${FORGEJO_LFS_JWT_SECRET}
+      - FORGEJO__mailer__PASSWD=${FORGEJO_SMTP_PASSWD}
+    volumes:
+      - ./data/forgejo:/data
+      - /mnt/storage/forgejo-data:/data/git  # Tu excelente configuración para el HDD de 2TB
+    ports:
+      - "3010:3000"
+      - "2323:22" # Mapeado a 2222 para no romper tu SSH de administración del Ubuntu
+    networks:
+      - dev-network

@@ -1,0 +1,112 @@
+{
+    admin localhost:2019
+}
+
+# --- INFRAESTRUCTURA EN DOCKER (Resolución interna por nombre de servicio) ---
+
+# Homepage
+home.kime.lan {
+    tls internal
+    reverse_proxy homepage:3000
+}
+
+# Uptime Kuma - Monitoreo de Sitios
+status.kime.lan {
+    tls internal
+    reverse_proxy uptime-kuma:3001
+}
+
+# n8n - Automatización y Webhooks locales
+n8n.kime.lan {
+    tls internal
+
+    # Manejo de Preflight CORS (Peticiones OPTIONS)
+    @cors_preflight method OPTIONS
+    handle @cors_preflight {
+        header Access-Control-Allow-Origin *
+        header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        header Access-Control-Allow-Headers "Accept, Authorization, Content-Type, Origin, User-Agent, X-Requested-With"
+        header Access-Control-Max-Age "3600"
+        respond "" 204
+    }
+
+    # Peticiones normales (GET, POST, etc.)
+    handle {
+        header Access-Control-Allow-Origin *
+        header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        header Access-Control-Allow-Headers "Accept, Authorization, Content-Type, Origin, User-Agent, X-Requested-With"
+
+        reverse_proxy n8n:5678
+    }
+}
+
+# Portainer - Gestor de docker
+docker.kime.lan {
+    tls internal
+
+    reverse_proxy portainer:9443 {
+        transport http {
+            tls
+            tls_insecure_skip_verify
+        }
+    }
+}
+
+# Forgejo - Tu Git auto-alojado
+git.kime.lan {
+    tls internal
+    reverse_proxy forgejo:3000
+}
+
+# Langfuse - Observabilidad de Chatbots e IA
+ai.kime.lan {
+    tls internal
+    reverse_proxy langfuse-web:3000
+}
+
+# Mailpit - Captura de Emails (Interfaz Web)
+mail.kime.lan {
+    tls internal
+    reverse_proxy mailpit:8025
+}
+
+# MinIO - Consola de Almacenamiento S3
+s3.kime.lan {
+    tls internal
+    reverse_proxy minio:9001
+}
+
+
+# --- APIS Y FRONTENDS EN DESARROLLO (Viven en tu MacBook o puertos del Host) ---
+
+# Kodama API (NestJS)
+api.kime.lan {
+    tls internal
+    reverse_proxy 192.168.100.111:3500
+}
+
+# Landingo y entornos de administración
+admin.kime.lan, admin-*.kime.lan {
+    tls internal
+    reverse_proxy 192.168.100.111:3501
+}
+
+kime.lan {
+    tls internal
+    reverse_proxy 192.168.100.111:3502
+}
+
+garatortiz.kime.lan {
+    tls internal
+    reverse_proxy 192.168.100.111:3503
+}
+
+loyalty.kime.lan {
+    tls internal
+    reverse_proxy 192.168.100.111:3504
+}
+
+cows.kime.lan {
+    tls internal
+    reverse_proxy 192.168.100.111:3505
+}

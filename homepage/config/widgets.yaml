@@ -1,0 +1,17 @@
+---
+- resources:
+    cpu: true
+    memory: true
+    disk: /
+
+- datetime:
+    text_size: xl
+    format:
+      date: style_long
+      time: hr24
+
+- weather:
+    provider: openmeteo
+    latitude: -31.6333
+    longitude: -60.7
+    units: metric

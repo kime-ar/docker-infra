@@ -1,0 +1,14 @@
+networks:
+  dev-network:
+    external: true
+
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:v0.9.11
+    container_name: homepage
+    volumes:
+      - ./config:/app/config
+      - /run/snap.docker/docker.sock:/var/run/docker.sock:ro # Le pasamos el socket real de Snap que descubrimos hoy
+    restart: unless-stopped
+    networks:
+      - dev-network
