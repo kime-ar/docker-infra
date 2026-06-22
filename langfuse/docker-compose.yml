@@ -8,17 +8,17 @@ services:
     container_name: langfuse-web
     depends_on:
       - langfuse-worker
-    ports:
-      - "3030:3000" # Acceso web en el puerto 3030 de tu server
     environment:
       - NODE_ENV=production
-      - NEXTAUTH_URL=http://localhost:3030
-      - NEXTAUTH_SECRET=un_secreto_super_aleatorio_local_1234
-      - SALT=otra_clave_para_hashing_local_5678
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - SALT=${SALT}
       
       # Conexión al Postgres compartido (apuntando al schema langfuse)
-      - DATABASE_URL=postgresql://postgres:postgres_password_local@postgres:5432/postgres?schema=langfuse
-      
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres?schema=langfuse
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
       # Desactivar telemetría externa si preferís máxima privacidad
       - TELEMETRY_ENABLED=false
     restart: unless-stopped
@@ -30,7 +30,10 @@ services:
     container_name: langfuse-worker
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:postgres_password_local@postgres:5432/postgres?schema=langfuse
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres?schema=langfuse
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
     restart: unless-stopped
     networks:
       - dev-network

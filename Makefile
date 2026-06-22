@@ -4,7 +4,7 @@
 # Variables Globales
 # ==========================================
 # Usamos el binario de Snap y forzamos la inyección del archivo .env maestro
-DOCKER = sudo /snap/bin/docker compose --env-file .env
+DOCKER = docker compose --env-file .env
 
 # ==========================================
 # Panel de Operaciones (Kime Infra)
@@ -33,6 +33,9 @@ down:
 restart:
 	@echo "🔄 Reiniciando servicios..."
 	$(DOCKER) down
+	@echo "⏳ Esperando que se liberen los puertos..."
+	@sleep 5
+	@echo "🚀 Levantando toda la infraestructura..."
 	$(DOCKER) up -d --remove-orphans
 
 logs:
@@ -49,4 +52,4 @@ pull:
 
 clean:
 	@echo "🧹 Limpiando el sistema Docker (Imágenes sin uso, redes colgadas)..."
-	sudo /snap/bin/docker system prune -a --volumes
+	sudo docker system prune -a --volumes

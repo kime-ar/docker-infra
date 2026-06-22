@@ -11,6 +11,9 @@ networks:
     name: dev-network
     driver: bridge
 
+volumes:
+  postgres_master_data:
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -65,7 +68,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
-      - /data/docker/minio:/data
+      - ./data/minio:/data
     networks:
       - dev-network
 
@@ -74,6 +77,6 @@ services:
     container_name: mailpit
     restart: unless-stopped
     volumes:
-      - /data/docker/mailpit:/data
+      - ./data/mailpit:/data
     networks:
       - dev-network

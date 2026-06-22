@@ -35,7 +35,7 @@ services:
       - DB_POSTGRESDB_DATABASE=postgres
       - DB_POSTGRESDB_USER=postgres
       - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_POSTGRESDB_SCHEMA=n8nw
+      - DB_POSTGRESDB_SCHEMA=n8n
       # Conexión a Redis para acelerar ejecuciones y manejar colas
       - EXECUTIONS_MODE=queue
       - QUEUE_BULL_REDIS_HOST=redis
@@ -43,11 +43,6 @@ services:
       - QUEUE_BULLMQ_REDIS_HOST=redis
       - QUEUE_BULLMQ_REDIS_PORT=6379
     volumes:
-      - n8n_data:/home/node/.n8n
+      - ../data/n8n:/home/node/.n8n
     networks:
       - dev-network
-
-volumes:
-  n8n_data:
-    name: n8n_data
-    external: true

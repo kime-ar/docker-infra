@@ -12,15 +12,7 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
+      - ../data/caddy:/data
+      - ../data/caddy_config:/config
     networks:
       - dev-network
-
-volumes:
-  caddy_data:
-    name: caddy_data
-    external: true
-  caddy_config:
-    name: caddy_config
-    external: true
