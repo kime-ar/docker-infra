@@ -1,0 +1,9 @@
+log:
+  level: info
+
+runner:
+  file: .runner
+  capacity: 1
+
+container:
+  network: "dev-network"

@@ -2,6 +2,9 @@
 # Datos y Volúmenes de Contenedores (Ignorar)
 # ==========================================
 data/
+data-redis/
+forgejo/forgejo-data/
+forgejo/runner-data/
 
 # Logs e históricos del sistema
 **/logs/
