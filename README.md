@@ -19,8 +19,8 @@ Este laboratorio utiliza una arquitectura modular orquestada desde un único arc
 
 *   **Enrutamiento y Seguridad:** Caddy (Proxy Inverso con resolución de dominios locales `.lan` y manejo estricto de CORS).
 *   **Capa de Datos:** PostgreSQL 16 con extensión `pgvector` (aislado por esquemas para cada app), Redis 7 Alpine y MinIO para almacenamiento de objetos S3 local.
-*   **Desarrollo y Workflows:** Forgejo (Servidor Git), n8n en modo colas (fijado en versión v1) y Mailpit para intercepción de correos SMTP.
-*   **Observabilidad:** Homepage (Dashboard central conectado de forma segura al socket de Docker), Uptime Kuma (Monitoreo) y Langfuse (Observabilidad para LLMs).
+*   **Desarrollo y Workflows:** Forgejo (Servidor Git), n8n (fijado en versión v1, modo regular) y Mailpit para intercepción de correos SMTP.
+*   **Observabilidad:** Homepage (Dashboard central conectado de forma segura al socket de Docker), Uptime Kuma (Monitoreo), Langfuse (Observabilidad para LLMs) y SonarQube (Calidad de código).
 
 ---
 
@@ -28,7 +28,7 @@ Este laboratorio utiliza una arquitectura modular orquestada desde un único arc
 
 A diferencia de las configuraciones de Docker típicas de tutoriales, este entorno aplica prácticas de producción:
 
-1.  **Redes Zero-Trust:** Ningún puerto de base de datos o aplicación está expuesto directamente al Host. Todo el tráfico es gestionado y securizado obligatoriamente a través de Caddy.
+1.  **Redes Zero-Trust:** Las aplicaciones no exponen puertos al host; el tráfico HTTP(S) pasa obligatoriamente por Caddy. Excepciones documentadas: SSH de Forgejo (`2323`) para operaciones Git por SSH.
 2.  **Centralización de Secretos:** Ausencia total de credenciales en los archivos `docker-compose.yml` y `app.ini` de Forgejo. Todo se inyecta desde un único archivo `.env` maestro.
 3.  **Límites de Recursos (Cgroups):** Los contenedores pesados (Postgres, n8n, Redis) tienen límites estrictos de RAM y CPU (`deploy.resources`) para evitar caídas del servidor por fugas de memoria.
 4.  **Mantenibilidad Extrema:** Uso de la directiva `include` de Docker Compose y un `Makefile` dedicado para orquestar la infraestructura sin lidiar con comandos extensos.
@@ -63,7 +63,10 @@ Hemos abstraído la complejidad de Docker detrás de un `Makefile`. Ejecuta `mak
 *   `make down` - Apaga el laboratorio de manera segura.
 *   `make ps` - Muestra el estado de salud de todos los contenedores.
 *   `make logs app=<nombre>` - Revisa los logs en vivo de un servicio (ej. `make logs app=n8n`).
-*   `make clean` - Elimina contenedores huérfanos e imágenes sin uso para liberar espacio en disco.
+*   `make init-minio` - Crea buckets S3 requeridos en MinIO (Langfuse).
+*   `make migrate-legacy` - Migra datos de directorios legacy (`postgres-data/`, etc.) a `data/`.
+*   `make clean` - Apaga contenedores del proyecto y elimina imágenes dangling.
+*   `make clean-all` - Limpieza destructiva de todo el sistema Docker (requiere confirmación).
 
 ---
 
@@ -77,6 +80,17 @@ projects/
 └── repositories/       # (Tus aplicaciones: APIs, Bots, Frontends)
 ```
 Tus aplicaciones en `repositories/` pueden conectarse mágicamente a las bases de datos de esta infraestructura uniéndose a la red externa `dev-network` en sus propios archivos Compose.
+
+### Qué va en git vs `data/`
+
+| En git (config) | Fuera de git (runtime) |
+|-----------------|------------------------|
+| `docker-compose.yml`, `*/docker-compose.yml` | `data/` — volúmenes de todos los servicios |
+| `Caddyfile`, `homepage/config/` | `forgejo/runner-data/` |
+| `.env.example`, `init-scripts/` | `.env` — secretos locales |
+| `scripts/`, `Makefile` | Directorios legacy (`postgres-data/`, etc.) |
+
+Los datos runtime viven bajo `data/<servicio>/`. Si migrás desde layouts antiguos, usá `make migrate-legacy`.
 
 ---
 

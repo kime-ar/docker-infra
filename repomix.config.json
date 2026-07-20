@@ -1,0 +1,16 @@
+{
+  "output": {
+    "filePath": "repomix-output.txt",
+    "style": "markdown"
+  },
+  "include": ["**/*"],
+  "ignore": {
+    "customPatterns": [
+      "**/forgejo-data/**",
+      "**/homepage/config/logs/**",
+      "**/.git/**",
+      "**/postgres-data/**",
+      "**/postgres_data/**"
+    ]
+  }
+}

@@ -3,8 +3,11 @@
 # ==========================================
 data/
 data-redis/
+postgres-data/
+uptime-kuma/data/
 forgejo/forgejo-data/
 forgejo/runner-data/
+repomix-output.txt
 
 # Logs e históricos del sistema
 **/logs/

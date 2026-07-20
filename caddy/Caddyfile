@@ -1,5 +1,6 @@
+# Bloque global — un token de Cloudflare con permiso Zone:DNS:Edit sobre garatortiz.xyz
 {
-    admin localhost:2019
+    acme_dns cloudflare {$CLOUDFLARE_API_TOKEN}
 }
 
 # --- INFRAESTRUCTURA EN DOCKER (Resolución interna por nombre de servicio) ---
@@ -23,7 +24,7 @@ n8n.kime.lan {
     # Manejo de Preflight CORS (Peticiones OPTIONS)
     @cors_preflight method OPTIONS
     handle @cors_preflight {
-        header Access-Control-Allow-Origin *
+        header Access-Control-Allow-Origin {$N8N_CORS_ORIGIN}
         header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
         header Access-Control-Allow-Headers "Accept, Authorization, Content-Type, Origin, User-Agent, X-Requested-With"
         header Access-Control-Max-Age "3600"
@@ -32,7 +33,7 @@ n8n.kime.lan {
 
     # Peticiones normales (GET, POST, etc.)
     handle {
-        header Access-Control-Allow-Origin *
+        header Access-Control-Allow-Origin {$N8N_CORS_ORIGIN}
         header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
         header Access-Control-Allow-Headers "Accept, Authorization, Content-Type, Origin, User-Agent, X-Requested-With"
 
@@ -53,8 +54,7 @@ docker.kime.lan {
 }
 
 # Forgejo - Tu Git auto-alojado
-git.kime.lan {
-    tls internal
+git.garatortiz.xyz {
     reverse_proxy forgejo:3000
 }
 
@@ -70,43 +70,54 @@ mail.kime.lan {
     reverse_proxy mailpit:8025
 }
 
-# MinIO - Consola de Almacenamiento S3
+# MinIO - API S3 (URLs prefirmadas de Langfuse y clientes S3)
 s3.kime.lan {
+    tls internal
+    reverse_proxy minio:9000
+}
+
+# MinIO - Consola de Administración
+minio.kime.lan {
     tls internal
     reverse_proxy minio:9001
 }
 
+# SonarQube - Calidad de Código
+sonar.kime.lan {
+    tls internal
+    reverse_proxy sonarqube:9000
+}
 
 # --- APIS Y FRONTENDS EN DESARROLLO (Viven en tu MacBook o puertos del Host) ---
 
 # Kodama API (NestJS)
 api.kime.lan {
     tls internal
-    reverse_proxy 192.168.100.111:3500
+    reverse_proxy {$HOST_IP}:3500
 }
 
 # Landingo y entornos de administración
 admin.kime.lan, admin-*.kime.lan {
     tls internal
-    reverse_proxy 192.168.100.111:3501
+    reverse_proxy {$HOST_IP}:3501
 }
 
 kime.lan {
     tls internal
-    reverse_proxy 192.168.100.111:3502
+    reverse_proxy {$HOST_IP}:3502
 }
 
 garatortiz.kime.lan {
     tls internal
-    reverse_proxy 192.168.100.111:3503
+    reverse_proxy {$HOST_IP}:3503
 }
 
 loyalty.kime.lan {
     tls internal
-    reverse_proxy 192.168.100.111:3504
+    reverse_proxy {$HOST_IP}:3504
 }
 
 cows.kime.lan {
     tls internal
-    reverse_proxy 192.168.100.111:3505
+    reverse_proxy {$HOST_IP}:3505
 }

@@ -8,8 +8,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
     container_name: n8n
     restart: unless-stopped
     user: "1000:1000"
@@ -26,22 +24,22 @@ services:
       - GENERIC_TIMEZONE=America/Argentina/Buenos_Aires
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_RUNNERS_ENABLED=true
-      - N8N_SECURE_COOKIE=false
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      # Detrás de Caddy con TLS: cookies seguras y URLs públicas correctas
+      - N8N_SECURE_COOKIE=true
+      - N8N_PROXY_HOPS=1
+      - WEBHOOK_URL=https://n8n.kime.lan/
+      - N8N_EDITOR_BASE_URL=https://n8n.kime.lan/
       # Conexión al Postgres compartido apuntando al schema aislado de n8n
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_DATABASE=postgres
       - DB_POSTGRESDB_USER=postgres
-      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en .env}
       - DB_POSTGRESDB_SCHEMA=n8n
-      # Conexión a Redis para acelerar ejecuciones y manejar colas
-      - EXECUTIONS_MODE=queue
-      - QUEUE_BULL_REDIS_HOST=redis
-      - QUEUE_BULL_REDIS_PORT=6379
-      - QUEUE_BULLMQ_REDIS_HOST=redis
-      - QUEUE_BULLMQ_REDIS_PORT=6379
+      # Nota: el modo 'queue' se eliminó porque requiere contenedores 'n8n worker'
+      # dedicados; sin ellos las ejecuciones de producción quedan encoladas para
+      # siempre. En modo regular (default) la instancia principal ejecuta todo.
     volumes:
       - ../data/n8n:/home/node/.n8n
     networks:

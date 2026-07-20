@@ -1,0 +1,36 @@
+networks:
+  dev-network:
+    external: true
+
+services:
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    environment:
+      SONAR_JDBC_USERNAME: postgres
+      SONAR_JDBC_PASSWORD: ${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en .env}
+      SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/postgres?currentSchema=sonar
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/api/system/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    volumes:
+      - ../data/sonarqube/data:/opt/sonarqube/data
+      - ../data/sonarqube/extensions:/opt/sonarqube/extensions
+      - ../data/sonarqube/logs:/opt/sonarqube/logs
+    networks:
+      - dev-network
+    restart: unless-stopped

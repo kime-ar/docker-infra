@@ -1,9 +1,8 @@
-.PHONY: help up down restart logs ps clean pull
+.PHONY: help up down restart logs ps clean clean-all pull init-minio migrate-legacy
 
 # ==========================================
 # Variables Globales
 # ==========================================
-# Usamos el binario de Snap y forzamos la inyección del archivo .env maestro
 DOCKER = docker compose --env-file .env
 
 # ==========================================
@@ -14,13 +13,16 @@ help:
 	@echo "🛠️  Panel de Control - Kime Infraestructura"
 	@echo "========================================"
 	@echo "Comandos disponibles:"
-	@echo "  make up       - Levanta toda la infraestructura en segundo plano"
-	@echo "  make down     - Apaga y destruye todos los contenedores de la infra"
-	@echo "  make restart  - Reinicia toda la infraestructura"
-	@echo "  make logs     - Muestra todos los logs (usa 'make logs app=n8n' para uno específico)"
-	@echo "  make ps       - Muestra el estado de los contenedores"
-	@echo "  make pull     - Descarga las últimas versiones de las imágenes"
-	@echo "  make clean    - 🧹 Elimina contenedores huérfanos, redes sin uso y caché"
+	@echo "  make up              - Levanta toda la infraestructura en segundo plano"
+	@echo "  make down            - Apaga y destruye todos los contenedores de la infra"
+	@echo "  make restart         - Reinicia toda la infraestructura"
+	@echo "  make logs            - Muestra todos los logs (usa 'make logs app=n8n' para uno específico)"
+	@echo "  make ps              - Muestra el estado de los contenedores"
+	@echo "  make pull            - Descarga las últimas versiones de las imágenes"
+	@echo "  make init-minio      - Crea buckets S3 requeridos en MinIO"
+	@echo "  make migrate-legacy  - Migra datos de directorios legacy a data/"
+	@echo "  make clean           - Apaga contenedores y elimina recursos huérfanos del proyecto"
+	@echo "  make clean-all       - ⚠️  Limpieza destructiva de TODO el sistema Docker"
 
 up:
 	@echo "🚀 Levantando toda la infraestructura..."
@@ -50,6 +52,18 @@ pull:
 	@echo "⬇️ Descargando actualizaciones de imágenes..."
 	$(DOCKER) pull
 
+init-minio:
+	@bash scripts/init-minio-buckets.sh
+
+migrate-legacy:
+	@bash scripts/migrate-legacy-data.sh
+
 clean:
-	@echo "🧹 Limpiando el sistema Docker (Imágenes sin uso, redes colgadas)..."
+	@echo "🧹 Limpiando recursos huérfanos del proyecto..."
+	$(DOCKER) down --remove-orphans
+	docker image prune -f
+
+clean-all:
+	@echo "⚠️  Esto eliminará imágenes, contenedores y volúmenes de TODO el sistema Docker."
+	@read -p "Escribí 'yes' para continuar: " confirm && [ "$$confirm" = "yes" ] || (echo "Cancelado." && exit 1)
 	sudo docker system prune -a --volumes

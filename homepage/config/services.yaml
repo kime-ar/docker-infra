@@ -9,51 +9,78 @@
 
     - Caddy:
         icon: caddy
-        href: http://192.168.100.111:80
+        href: https://home.kime.lan
         description: Reverse Proxy
         server: my-server
         container: caddy
 
     - Forgejo:
         icon: forgejo
-        href: http://192.168.100.111:3010
-        description: Servidor Git Local
+        href: https://git.garatortiz.xyz
+        description: Servidor Git
         server: my-server
         container: forgejo
+
+    - Homepage:
+        icon: homepage
+        href: https://home.kime.lan
+        description: Dashboard central
+        server: my-server
+        container: homepage
+
+    - Uptime Kuma:
+        icon: uptime-kuma
+        href: https://status.kime.lan
+        description: Monitoreo de sitios
+        server: my-server
+        container: uptime-kuma
 
 - Herramientas de Desarrollo:
     - n8n:
         icon: n8n
-        href: http://192.168.100.111:5678
+        href: https://n8n.kime.lan
         description: Automatización de Workflows
         server: my-server
         container: n8n
 
     - MinIO:
         icon: minio
-        href: http://192.168.100.111:9001
+        href: https://minio.kime.lan
         description: Almacenamiento de Objetos S3
         server: my-server
         container: minio
 
     - Mailpit:
         icon: mailpit
-        href: http://192.168.100.111:8025
+        href: https://mail.kime.lan
         description: Servidor de correo de pruebas
         server: my-server
         container: mailpit
 
+    - Langfuse:
+        icon: langfuse
+        href: https://ai.kime.lan
+        description: Observabilidad de IA
+        server: my-server
+        container: langfuse-web
+
+    - SonarQube:
+        icon: sonarqube
+        href: https://sonar.kime.lan
+        description: Calidad de código
+        server: my-server
+        container: sonarqube_app
+
 - Mis Aplicaciones & APIs:
     - API Kodama:
         icon: nodejs
-        href: http://192.168.100.111:4000/status # Cambialo por el puerto real de tu API
+        href: https://api.kime.lan/status
         description: Multi-tenant API Core
         server: my-server
-        container: kodama-api # El nombre exacto del contenedor si corre en Docker
-        # Widget para verificar si responde 200 OK:
+        container: kodama-api
         widget:
           type: customapi
-          url: http://192.168.100.111:4000/api/health # Tu endpoint de salud
+          url: https://api.kime.lan/api/health
           mappings:
             - status:
                 value: OK

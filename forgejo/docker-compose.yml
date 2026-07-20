@@ -6,32 +6,44 @@ services:
   server:
     image: codeberg.org/forgejo/forgejo:9
     container_name: forgejo
-    restart: always
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     environment:
       - USER_UID=1000
       - USER_GID=1000
-      # Inyección dinámica de secretos de Forgejo
-      - FORGEJO__security__INTERNAL_TOKEN=${FORGEJO_INTERNAL_TOKEN}
-      - FORGEJO__oauth2__JWT_SECRET=${FORGEJO_JWT_SECRET}
-      - FORGEJO__server__LFS_JWT_SECRET=${FORGEJO_LFS_JWT_SECRET}
-      - FORGEJO__mailer__PASSWD=${FORGEJO_SMTP_PASSWD}
+      - FORGEJO__security__INTERNAL_TOKEN=${FORGEJO_INTERNAL_TOKEN:?Definí FORGEJO_INTERNAL_TOKEN en .env}
+      - FORGEJO__oauth2__JWT_SECRET=${FORGEJO_JWT_SECRET:?Definí FORGEJO_JWT_SECRET en .env}
+      - FORGEJO__server__LFS_JWT_SECRET=${FORGEJO_LFS_JWT_SECRET:?Definí FORGEJO_LFS_JWT_SECRET en .env}
+      - FORGEJO__mailer__PASSWD=${FORGEJO_SMTP_PASSWD:-}
     volumes:
       - ../data/forgejo:/data
-      - /mnt/storage/forgejo-data:/data/git  # Tu excelente configuración para el HDD de 2TB
+      - ${FORGEJO_GIT_STORAGE:?Definí FORGEJO_GIT_STORAGE en .env}:/data/git
     ports:
-      - "3010:3000"
-      - "2323:22" # Mapeado a 2222 para no romper tu SSH de administración del Ubuntu
+      - "2323:22"
     networks:
       - dev-network
+
   runner:
     image: code.forgejo.org/forgejo/runner:3.4.1
     container_name: forgejo-runner
-    restart: always
+    restart: unless-stopped
+    depends_on:
+      - server
     networks:
       - dev-network
     environment:
       - ACTIONS_RUNNER_CONTAINER_NETWORK=dev-network
-      - GITEA_RUNNER_REGISTRATION_TOKEN=${FORGEJO_RUNNER_TOKEN}
+      - GITEA_RUNNER_REGISTRATION_TOKEN=${FORGEJO_RUNNER_TOKEN:?Definí FORGEJO_RUNNER_TOKEN en .env}
     command: sh -c "forgejo-runner register --no-interactive --instance http://forgejo:3000 --token $${GITEA_RUNNER_REGISTRATION_TOKEN} --name kime-ubuntu-runner --labels ubuntu-latest:docker://node:20-bullseye,ubuntu-22.04:docker://ubuntu:22.04 || true && forgejo-runner daemon --config /data/config.yaml"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

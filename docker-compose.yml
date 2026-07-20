@@ -5,14 +5,12 @@ include:
   - n8n/docker-compose.yml
   - uptime-kuma/docker-compose.yml
   - langfuse/docker-compose.yml
+  - sonarqube/docker-compose.yml
 
 networks:
   dev-network:
     name: dev-network
     driver: bridge
-
-volumes:
-  postgres_master_data:
 
 services:
   postgres:
@@ -23,7 +21,7 @@ services:
       resources:
         limits:
           cpus: '1.5'
-          memory: 1.5G    # Límite seguro para Postgres
+          memory: 1.5G
         reservations:
           cpus: '0.5'
           memory: 512M
@@ -34,7 +32,7 @@ services:
       retries: 5
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en .env}
       POSTGRES_DB: postgres
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
@@ -50,10 +48,15 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 256M    # Redis maneja colas, no necesita tanta RAM
+          memory: 256M
         reservations:
           cpus: '0.1'
           memory: 64M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - ./data/redis:/data
     networks:
@@ -65,8 +68,16 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Definí MINIO_ROOT_USER en .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Definí MINIO_ROOT_PASSWORD en .env}
+      # URLs públicas detrás de Caddy: API en s3.kime.lan, consola en minio.kime.lan
+      MINIO_SERVER_URL: https://s3.kime.lan
+      MINIO_BROWSER_REDIRECT_URL: https://minio.kime.lan
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - ./data/minio:/data
     networks:

@@ -4,15 +4,24 @@ networks:
 
 services:
   caddy:
-    image: caddy:2-alpine
+    build: .
     container_name: caddy
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:?Definí CLOUDFLARE_API_TOKEN en .env}
+      - HOST_IP=${HOST_IP:-192.168.100.111}
+      - N8N_CORS_ORIGIN=${N8N_CORS_ORIGIN:-https://n8n.kime.lan}
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ../data/caddy:/data
       - ../data/caddy_config:/config
     networks:
-      - dev-network
+      dev-network:
+        # Alias para que otros contenedores (ej. Langfuse) resuelvan el dominio
+        # S3 hacia Caddy vía Docker DNS; el DNS de la LAN lo apunta a 127.0.0.1
+        # y dentro de un contenedor eso no sirve.
+        aliases:
+          - s3.kime.lan

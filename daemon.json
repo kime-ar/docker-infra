@@ -1,8 +1,0 @@
-sudo mkdir -p /var/snap/docker/current/config
-echo '{
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "10m",
-    "max-file": "3"
-  }
-}' | sudo tee /var/snap/docker/current/config/daemon.json
