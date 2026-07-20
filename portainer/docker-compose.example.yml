@@ -4,10 +4,12 @@
 #
 # Para instalaciones nuevas sin Portainer existente:
 #   docker compose -f portainer/docker-compose.example.yml --env-file .env up -d
-#   docker network connect dev-network portainer
+#   docker network connect edge portainer
+#
+# Portainer debe estar en 'edge' para que Caddy pueda proxyar docker.kime.lan.
 
 networks:
-  dev-network:
+  edge:
     external: true
 
 services:
@@ -19,4 +21,4 @@ services:
       - ../data/portainer:/data
       - ${DOCKER_SOCKET}:/var/run/docker.sock
     networks:
-      - dev-network
+      - edge

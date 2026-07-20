@@ -52,7 +52,7 @@ docker cp redis:/data/dump.rdb "${DEST}/redis.rdb" > /dev/null
 
 echo "[3/5] MinIO (mirror de todos los buckets)..."
 mkdir -p "${DEST}/minio"
-docker run --rm --network dev-network \
+docker run --rm --network data \
   --user "$(id -u):$(id -g)" \
   --env HOME=/tmp \
   -v "${DEST}/minio:/backup" \

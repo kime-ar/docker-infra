@@ -1,5 +1,7 @@
 networks:
-  dev-network:
+  edge:
+    external: true
+  data:
     external: true
 
 services:
@@ -18,8 +20,8 @@ services:
           cpus: '0.5'
           memory: 512M
     environment:
-      SONAR_JDBC_USERNAME: postgres
-      SONAR_JDBC_PASSWORD: ${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en .env}
+      SONAR_JDBC_USERNAME: sonar_app
+      SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:?Definí SONAR_DB_PASSWORD en .env}
       SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/postgres?currentSchema=sonar
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9000/api/system/status || exit 1"]
@@ -32,5 +34,6 @@ services:
       - ../data/sonarqube/extensions:/opt/sonarqube/extensions
       - ../data/sonarqube/logs:/opt/sonarqube/logs
     networks:
-      - dev-network
+      - edge   # Caddy (sonar.kime.lan) y descarga de plugins
+      - data   # Postgres
     restart: unless-stopped

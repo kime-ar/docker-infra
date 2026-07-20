@@ -15,7 +15,7 @@ Bienvenido a **Kime Infra**, una infraestructura auto-alojada (Home Lab) estruct
 
 ## 🏗️ Arquitectura y Stack Tecnológico
 
-Este laboratorio utiliza una arquitectura modular orquestada desde un único archivo maestro de Compose, compartiendo una red interna Zero-Trust (`dev-network`).
+Este laboratorio utiliza una arquitectura modular orquestada desde un único archivo maestro de Compose, con redes segmentadas por rol: `edge` (ingress: Caddy y las UIs que proxya), `data` (capa de datos sin salida a internet: Postgres/Redis/MinIO/Mailpit), `ci-jobs` (jobs de CI aislados) y `dev-network` (legacy, para que las apps externas de `repositories/` alcancen la capa de datos).
 
 *   **Enrutamiento y Seguridad:** Caddy (Proxy Inverso con resolución de dominios locales `.lan` y manejo estricto de CORS).
 *   **Capa de Datos:** PostgreSQL 16 con extensión `pgvector` (aislado por esquemas para cada app), Redis 7 Alpine y MinIO para almacenamiento de objetos S3 local.

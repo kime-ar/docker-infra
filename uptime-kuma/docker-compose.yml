@@ -1,5 +1,5 @@
 networks:
-  dev-network:
+  edge:
     external: true
 
 services:
@@ -10,4 +10,4 @@ services:
       - ../data/uptime-kuma:/app/data
     restart: unless-stopped
     networks:
-      - dev-network
+      - edge   # gracias a los aliases de Caddy puede monitorear *.kime.lan

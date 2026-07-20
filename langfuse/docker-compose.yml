@@ -1,5 +1,7 @@
 networks:
-  dev-network:
+  edge:
+    external: true
+  data:
     external: true
 
 services:
@@ -28,11 +30,14 @@ services:
       - ../data/caddy/caddy/pki/authorities/local/root.crt:/etc/ssl/certs/caddy-local-ca.pem:ro
     environment:
       - NODE_ENV=production
+      # Con dos redes (edge+data), Next.js standalone se bindea a una sola
+      # interfaz; 0.0.0.0 escucha en ambas para que Caddy pueda conectar.
+      - HOSTNAME=0.0.0.0
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/caddy-local-ca.pem
       - NEXTAUTH_URL=${NEXTAUTH_URL:-https://ai.kime.lan}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:?Definí NEXTAUTH_SECRET en .env}
       - SALT=${SALT:?Definí SALT en .env}
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en .env}@postgres:5432/postgres?schema=langfuse
+      - DATABASE_URL=postgresql://langfuse_app:${LANGFUSE_DB_PASSWORD:?Definí LANGFUSE_DB_PASSWORD en .env}@postgres:5432/postgres?schema=langfuse
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_AUTH=${REDIS_PASSWORD:?Definí REDIS_PASSWORD en .env}
@@ -40,21 +45,22 @@ services:
       - TELEMETRY_ENABLED=false
       - LANGFUSE_S3_EVENT_UPLOAD_BUCKET=${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse}
       - LANGFUSE_S3_EVENT_UPLOAD_REGION=us-east-1
-      - LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID=${MINIO_ROOT_USER}
-      - LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
+      - LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID=${LANGFUSE_S3_ACCESS_KEY:?Definí LANGFUSE_S3_ACCESS_KEY en .env}
+      - LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY=${LANGFUSE_S3_SECRET_KEY:?Definí LANGFUSE_S3_SECRET_KEY en .env}
       - LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT=http://minio:9000
       - LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE=true
       - LANGFUSE_S3_EVENT_UPLOAD_PREFIX=events/
       - LANGFUSE_S3_MEDIA_UPLOAD_BUCKET=${LANGFUSE_S3_MEDIA_UPLOAD_BUCKET:-langfuse}
       - LANGFUSE_S3_MEDIA_UPLOAD_REGION=us-east-1
-      - LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID=${MINIO_ROOT_USER}
-      - LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
+      - LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID=${LANGFUSE_S3_ACCESS_KEY}
+      - LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY=${LANGFUSE_S3_SECRET_KEY}
       - LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=https://s3.kime.lan
       - LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE=true
       - LANGFUSE_S3_MEDIA_UPLOAD_PREFIX=media/
     restart: unless-stopped
     networks:
-      - dev-network
+      - edge   # Caddy (ai.kime.lan) y s3.kime.lan para media
+      - data   # Postgres, Redis, MinIO
 
   langfuse-worker:
     image: langfuse/langfuse-worker:2
@@ -80,25 +86,26 @@ services:
     environment:
       - NODE_ENV=production
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/caddy-local-ca.pem
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres?schema=langfuse
+      - DATABASE_URL=postgresql://langfuse_app:${LANGFUSE_DB_PASSWORD:?Definí LANGFUSE_DB_PASSWORD en .env}@postgres:5432/postgres?schema=langfuse
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_AUTH=${REDIS_PASSWORD:?Definí REDIS_PASSWORD en .env}
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
       - LANGFUSE_S3_EVENT_UPLOAD_BUCKET=${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse}
       - LANGFUSE_S3_EVENT_UPLOAD_REGION=us-east-1
-      - LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID=${MINIO_ROOT_USER}
-      - LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
+      - LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID=${LANGFUSE_S3_ACCESS_KEY:?Definí LANGFUSE_S3_ACCESS_KEY en .env}
+      - LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY=${LANGFUSE_S3_SECRET_KEY:?Definí LANGFUSE_S3_SECRET_KEY en .env}
       - LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT=http://minio:9000
       - LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE=true
       - LANGFUSE_S3_EVENT_UPLOAD_PREFIX=events/
       - LANGFUSE_S3_MEDIA_UPLOAD_BUCKET=${LANGFUSE_S3_MEDIA_UPLOAD_BUCKET:-langfuse}
       - LANGFUSE_S3_MEDIA_UPLOAD_REGION=us-east-1
-      - LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID=${MINIO_ROOT_USER}
-      - LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
+      - LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID=${LANGFUSE_S3_ACCESS_KEY}
+      - LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY=${LANGFUSE_S3_SECRET_KEY}
       - LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=https://s3.kime.lan
       - LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE=true
       - LANGFUSE_S3_MEDIA_UPLOAD_PREFIX=media/
     restart: unless-stopped
     networks:
-      - dev-network
+      - edge   # s3.kime.lan (media) y egress
+      - data   # Postgres, Redis, MinIO

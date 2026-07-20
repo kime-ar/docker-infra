@@ -1,5 +1,5 @@
 networks:
-  dev-network:
+  edge:
     external: true
 
 services:
@@ -19,9 +19,18 @@ services:
       - ../data/caddy:/data
       - ../data/caddy_config:/config
     networks:
-      dev-network:
-        # Alias para que otros contenedores (ej. Langfuse) resuelvan el dominio
-        # S3 hacia Caddy vía Docker DNS; el DNS de la LAN lo apunta a 127.0.0.1
-        # y dentro de un contenedor eso no sirve.
+      edge:
+        # Aliases para que los contenedores de edge (Langfuse, Uptime Kuma,
+        # Homepage) resuelvan los dominios locales hacia Caddy vía Docker DNS;
+        # el DNS de la LAN los apunta a 127.0.0.1 y dentro de un contenedor
+        # eso no sirve.
         aliases:
           - s3.kime.lan
+          - minio.kime.lan
+          - home.kime.lan
+          - status.kime.lan
+          - n8n.kime.lan
+          - docker.kime.lan
+          - ai.kime.lan
+          - mail.kime.lan
+          - sonar.kime.lan

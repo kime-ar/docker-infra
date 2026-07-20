@@ -7,10 +7,17 @@ include:
   - langfuse/docker-compose.yml
   - sonarqube/docker-compose.yml
 
+# Las tres redes las crea `make up` (target networks) de forma idempotente:
+#   edge        - ingress: Caddy y todo servicio que Caddy proxya
+#   data        - capa de datos, sin salida a internet (--internal)
+#   dev-network - legacy/transición: apps externas de repositories/ -> capa de datos
 networks:
   dev-network:
-    name: dev-network
-    driver: bridge
+    external: true
+  edge:
+    external: true
+  data:
+    external: true
 
 services:
   postgres:
@@ -34,10 +41,16 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en .env}
       POSTGRES_DB: postgres
+      # Usadas por init-scripts/02-app-roles.sh SOLO en el primer initdb de una
+      # instalación nueva. En instancias existentes correr scripts/migrate-db-roles.sh.
+      N8N_DB_PASSWORD: ${N8N_DB_PASSWORD:?Definí N8N_DB_PASSWORD en .env}
+      LANGFUSE_DB_PASSWORD: ${LANGFUSE_DB_PASSWORD:?Definí LANGFUSE_DB_PASSWORD en .env}
+      SONAR_DB_PASSWORD: ${SONAR_DB_PASSWORD:?Definí SONAR_DB_PASSWORD en .env}
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
+      - data
       - dev-network
 
   redis:
@@ -77,6 +90,7 @@ services:
     volumes:
       - ./data/redis:/data
     networks:
+      - data
       - dev-network
 
   minio:
@@ -98,6 +112,8 @@ services:
     volumes:
       - ./data/minio:/data
     networks:
+      - data
+      - edge      # Caddy proxya la API S3 y la consola
       - dev-network
 
   mailpit:
@@ -107,4 +123,6 @@ services:
     volumes:
       - ./data/mailpit:/data
     networks:
+      - data      # recibe SMTP de las apps
+      - edge      # UI web vía Caddy
       - dev-network

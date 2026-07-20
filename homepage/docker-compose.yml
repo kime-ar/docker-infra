@@ -1,5 +1,5 @@
 networks:
-  dev-network:
+  edge:
     external: true
 
 services:
@@ -11,4 +11,4 @@ services:
       - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
     restart: unless-stopped
     networks:
-      - dev-network
+      - edge

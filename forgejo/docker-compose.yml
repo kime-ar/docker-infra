@@ -1,8 +1,8 @@
 networks:
-  dev-network:
+  edge:
     external: true
   # Red aislada para los jobs de CI: pueden clonar de Forgejo y salir a internet,
-  # pero NO alcanzan a Postgres/Redis/MinIO ni al resto de dev-network.
+  # pero NO alcanzan a Postgres/Redis/MinIO ni al resto de la infraestructura.
   ci-jobs:
     name: ci-jobs
     driver: bridge
@@ -36,7 +36,7 @@ services:
     ports:
       - "2323:22"
     networks:
-      - dev-network
+      - edge      # Caddy proxya git.garatortiz.xyz; también da egress (SMTP, mirrors)
       - ci-jobs   # los jobs de CI necesitan clonar vía http://forgejo:3000
 
   runner:

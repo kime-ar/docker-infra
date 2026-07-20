@@ -1,6 +1,8 @@
 networks:
-  dev-network:
-    external: true  # Le dice a Docker que use la red creada por el compose principal
+  edge:
+    external: true  # creada por el compose principal
+  data:
+    external: true
 
 services:
   n8n:
@@ -34,8 +36,8 @@ services:
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_DATABASE=postgres
-      - DB_POSTGRESDB_USER=postgres
-      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en .env}
+      - DB_POSTGRESDB_USER=n8n_app
+      - DB_POSTGRESDB_PASSWORD=${N8N_DB_PASSWORD:?Definí N8N_DB_PASSWORD en .env}
       - DB_POSTGRESDB_SCHEMA=n8n
       # Nota: el modo 'queue' se eliminó porque requiere contenedores 'n8n worker'
       # dedicados; sin ellos las ejecuciones de producción quedan encoladas para
@@ -43,4 +45,5 @@ services:
     volumes:
       - ../data/n8n:/home/node/.n8n
     networks:
-      - dev-network
+      - edge   # Caddy + egress para webhooks y nodos HTTP
+      - data   # Postgres

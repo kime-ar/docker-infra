@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs ps clean clean-all pull init-minio migrate-legacy backup backup-cron
+.PHONY: help up down restart logs ps clean clean-all pull init-minio migrate-legacy backup backup-cron networks
 
 # ==========================================
 # Variables Globales
@@ -26,7 +26,12 @@ help:
 	@echo "  make clean           - Apaga contenedores y elimina recursos huérfanos del proyecto"
 	@echo "  make clean-all       - ⚠️  Limpieza destructiva de TODO el sistema Docker"
 
-up:
+networks:
+	@docker network inspect edge >/dev/null 2>&1 || docker network create edge
+	@docker network inspect data >/dev/null 2>&1 || docker network create --internal data
+	@docker network inspect dev-network >/dev/null 2>&1 || docker network create dev-network
+
+up: networks
 	@echo "🚀 Levantando toda la infraestructura..."
 	$(DOCKER) up -d --remove-orphans
 
@@ -34,7 +39,7 @@ down:
 	@echo "🛑 Apagando el laboratorio..."
 	$(DOCKER) down
 
-restart:
+restart: networks
 	@echo "🔄 Reiniciando servicios..."
 	$(DOCKER) down
 	@echo "⏳ Esperando que se liberen los puertos..."
