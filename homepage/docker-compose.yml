@@ -3,12 +3,49 @@ networks:
     external: true
 
 services:
+  # Proxy de solo lectura al socket de Docker. Homepage NO monta el socket
+  # real: evita que un XSS/RCE en Homepage pueda leer env vars (secretos)
+  # de todos los contenedores vía docker inspect.
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3.0
+    container_name: docker-socket-proxy
+    restart: unless-stopped
+    environment:
+      # Solo lo que Homepage necesita para widgets de estado
+      CONTAINERS: 1
+      EVENTS: 1
+      INFO: 1
+      NETWORKS: 0
+      IMAGES: 0
+      VOLUMES: 0
+      SERVICES: 0
+      TASKS: 0
+      POST: 0
+      EXEC: 0
+    volumes:
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 64M
+    networks:
+      - edge
+
   homepage:
     image: ghcr.io/gethomepage/homepage:v0.9.11
     container_name: homepage
+    depends_on:
+      - docker-socket-proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          memory: 64M
     volumes:
       - ./config:/app/config
-      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
     restart: unless-stopped
     networks:
       - edge

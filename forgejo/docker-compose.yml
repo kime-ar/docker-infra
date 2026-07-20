@@ -30,6 +30,12 @@ services:
       - FORGEJO__oauth2__JWT_SECRET=${FORGEJO_JWT_SECRET:?Definí FORGEJO_JWT_SECRET en .env}
       - FORGEJO__server__LFS_JWT_SECRET=${FORGEJO_LFS_JWT_SECRET:?Definí FORGEJO_LFS_JWT_SECRET en .env}
       - FORGEJO__mailer__PASSWD=${FORGEJO_SMTP_PASSWD:-}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     volumes:
       - ../data/forgejo:/data
       - ${FORGEJO_GIT_STORAGE:?Definí FORGEJO_GIT_STORAGE en .env}:/data/git
@@ -40,11 +46,19 @@ services:
       - ci-jobs   # los jobs de CI necesitan clonar vía http://forgejo:3000
 
   runner:
-    image: code.forgejo.org/forgejo/runner:3.4.1
+    image: code.forgejo.org/forgejo/runner:6.3.1
     container_name: forgejo-runner
     restart: unless-stopped
     depends_on:
-      - server
+      server:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          memory: 256M
     networks:
       - ci-jobs
     environment:

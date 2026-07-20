@@ -10,7 +10,7 @@ services:
     container_name: langfuse-web
     depends_on:
       langfuse-worker:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
@@ -23,11 +23,10 @@ services:
           cpus: '1.0'
           memory: 1G
         reservations:
-          cpus: '0.25'
           memory: 256M
     volumes:
-      # CA local de Caddy para validar el TLS de https://s3.kime.lan (media uploads)
-      - ../data/caddy/caddy/pki/authorities/local/root.crt:/etc/ssl/certs/caddy-local-ca.pem:ro
+      # CA pública de Caddy (caddy/certs/root.crt) para validar TLS de s3.kime.lan
+      - ../caddy/certs/root.crt:/etc/ssl/certs/caddy-local-ca.pem:ro
     environment:
       - NODE_ENV=production
       # Con dos redes (edge+data), Next.js standalone se bindea a una sola
@@ -57,6 +56,12 @@ services:
       - LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=https://s3.kime.lan
       - LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE=true
       - LANGFUSE_S3_MEDIA_UPLOAD_PREFIX=media/
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/public/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
     networks:
       - edge   # Caddy (ai.kime.lan) y s3.kime.lan para media
@@ -78,11 +83,9 @@ services:
           cpus: '1.0'
           memory: 1G
         reservations:
-          cpus: '0.25'
           memory: 256M
     volumes:
-      # CA local de Caddy para validar el TLS de https://s3.kime.lan (media uploads)
-      - ../data/caddy/caddy/pki/authorities/local/root.crt:/etc/ssl/certs/caddy-local-ca.pem:ro
+      - ../caddy/certs/root.crt:/etc/ssl/certs/caddy-local-ca.pem:ro
     environment:
       - NODE_ENV=production
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/caddy-local-ca.pem
@@ -105,6 +108,13 @@ services:
       - LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=https://s3.kime.lan
       - LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE=true
       - LANGFUSE_S3_MEDIA_UPLOAD_PREFIX=media/
+    healthcheck:
+      # El worker escucha en 3030; /api/health es el endpoint documentado.
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3030/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     restart: unless-stopped
     networks:
       - edge   # s3.kime.lan (media) y egress

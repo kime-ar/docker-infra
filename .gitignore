@@ -9,6 +9,9 @@ forgejo/forgejo-data/
 forgejo/runner-data/
 repomix-output.txt
 
+# Certificado público de Caddy (sí va a git); las claves privadas viven en named volume
+# caddy/certs/root.crt  — NO ignorar
+
 # Logs e históricos del sistema
 **/logs/
 **/log/

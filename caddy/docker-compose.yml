@@ -2,6 +2,14 @@ networks:
   edge:
     external: true
 
+volumes:
+  caddy_data:
+    name: docker-infra_caddy_data
+    external: true
+  caddy_config:
+    name: docker-infra_caddy_config
+    external: true
+
 services:
   caddy:
     build: .
@@ -10,14 +18,28 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          memory: 64M
     environment:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:?Definí CLOUDFLARE_API_TOKEN en .env}
       - HOST_IP=${HOST_IP:-192.168.100.111}
       - N8N_CORS_ORIGIN=${N8N_CORS_ORIGIN:-https://n8n.kime.lan}
+    healthcheck:
+      # La API admin escucha en 127.0.0.1:2019 (evitar localhost → IPv6)
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ../data/caddy:/data
-      - ../data/caddy_config:/config
+      - caddy_data:/data
+      - caddy_config:/config
     networks:
       edge:
         # Aliases para que los contenedores de edge (Langfuse, Uptime Kuma,

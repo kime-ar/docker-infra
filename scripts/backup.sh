@@ -73,6 +73,9 @@ tar czf "${DEST}/n8n-data.tar.gz" -C data n8n
 docker cp uptime-kuma:/app/data "${DEST}/uptime-kuma" > /dev/null
 
 echo "==> Aplicando retención (últimos ${RETENTION} backups)..."
-ls -1dt "${BACKUP_ROOT}"/*/ 2>/dev/null | tail -n "+$((RETENTION + 1))" | xargs -r rm -rf
+# shellcheck disable=SC2012
+find "${BACKUP_ROOT}" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
+  | sort -rn | tail -n "+$((RETENTION + 1))" | cut -d' ' -f2- \
+  | while IFS= read -r old; do rm -rf "$old"; done
 
 echo "==> Backup OK: $(du -sh "$DEST" | cut -f1) en ${DEST}"

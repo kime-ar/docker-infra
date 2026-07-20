@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs ps clean clean-all pull init-minio migrate-legacy backup backup-cron networks
+.PHONY: help up down restart restart-one logs ps clean clean-all pull init-minio migrate-legacy migrate-caddy backup backup-cron networks
 
 # ==========================================
 # Variables Globales
@@ -15,12 +15,14 @@ help:
 	@echo "Comandos disponibles:"
 	@echo "  make up              - Levanta toda la infraestructura en segundo plano"
 	@echo "  make down            - Apaga y destruye todos los contenedores de la infra"
-	@echo "  make restart         - Reinicia toda la infraestructura"
+	@echo "  make restart         - Reinicia toda la infraestructura (recrea contenedores)"
+	@echo "  make restart-one app=n8n - Reinicia un servicio sin recrear el resto"
 	@echo "  make logs            - Muestra todos los logs (usa 'make logs app=n8n' para uno específico)"
 	@echo "  make ps              - Muestra el estado de los contenedores"
 	@echo "  make pull            - Descarga las últimas versiones de las imágenes"
-	@echo "  make init-minio      - Crea buckets S3 requeridos en MinIO"
+	@echo "  make init-minio      - Crea buckets S3 y usuario dedicado de Langfuse"
 	@echo "  make migrate-legacy  - Migra datos de directorios legacy a data/"
+	@echo "  make migrate-caddy   - Migra data/caddy* a named volumes"
 	@echo "  make backup          - Backup completo (Postgres, Redis, MinIO, Forgejo, n8n)"
 	@echo "  make backup-cron     - Instala cron diario de backup (03:30)"
 	@echo "  make clean           - Apaga contenedores y elimina recursos huérfanos del proyecto"
@@ -30,6 +32,8 @@ networks:
 	@docker network inspect edge >/dev/null 2>&1 || docker network create edge
 	@docker network inspect data >/dev/null 2>&1 || docker network create --internal data
 	@docker network inspect dev-network >/dev/null 2>&1 || docker network create dev-network
+	@docker volume inspect docker-infra_caddy_data >/dev/null 2>&1 || docker volume create docker-infra_caddy_data
+	@docker volume inspect docker-infra_caddy_config >/dev/null 2>&1 || docker volume create docker-infra_caddy_config
 
 up: networks
 	@echo "🚀 Levantando toda la infraestructura..."
@@ -46,6 +50,11 @@ restart: networks
 	@sleep 5
 	@echo "🚀 Levantando toda la infraestructura..."
 	$(DOCKER) up -d --remove-orphans
+
+restart-one:
+	@test -n "$(app)" || (echo "Uso: make restart-one app=<servicio>"; exit 1)
+	@echo "🔄 Reiniciando $(app)..."
+	$(DOCKER) restart $(app)
 
 logs:
 	@echo "📋 Mostrando logs (Ctrl+C para salir)..."
@@ -64,6 +73,9 @@ init-minio:
 
 migrate-legacy:
 	@bash scripts/migrate-legacy-data.sh
+
+migrate-caddy:
+	@bash scripts/migrate-caddy-volumes.sh
 
 backup:
 	@bash scripts/backup.sh

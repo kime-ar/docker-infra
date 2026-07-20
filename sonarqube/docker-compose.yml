@@ -15,14 +15,21 @@ services:
       resources:
         limits:
           cpus: '2.0'
-          memory: 2G
+          memory: 3G
         reservations:
-          cpus: '0.5'
-          memory: 512M
+          memory: 1G
     environment:
       SONAR_JDBC_USERNAME: sonar_app
       SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:?Definí SONAR_DB_PASSWORD en .env}
       SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/postgres?currentSchema=sonar
+      # Heaps explícitos: suman ~2.5G; dejan margen dentro del límite de 3G.
+      SONAR_SEARCH_JAVAOPTS: "-Xms512m -Xmx512m"
+      SONAR_CE_JAVAOPTS: "-Xms512m -Xmx1g"
+      SONAR_WEB_JAVAOPTS: "-Xms256m -Xmx512m"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9000/api/system/status || exit 1"]
       interval: 30s

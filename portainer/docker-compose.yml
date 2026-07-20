@@ -1,0 +1,30 @@
+# Portainer corre con el profile "portainer" para no chocar con una instalación
+# standalone existente (container_name: portainer).
+#
+# Instalación nueva / adoptar Portainer al stack:
+#   COMPOSE_PROFILES=portainer make up
+#
+# Si ya tenés Portainer standalone conectado a 'edge', NO actives el profile
+# (evitaría conflicto de nombre). Para migrar: detené el standalone, mové sus
+# datos a data/portainer/ y levantá con el profile.
+
+networks:
+  edge:
+    external: true
+
+services:
+  portainer:
+    profiles: [portainer]
+    image: portainer/portainer-ce:2.27.3
+    container_name: portainer
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    volumes:
+      - ../data/portainer:/data
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock
+    networks:
+      - edge

@@ -1,4 +1,4 @@
-name: Validate Compose
+name: Validate Infra
 
 on:
   push:
@@ -10,9 +10,50 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Create .env from example
         run: cp .env.example .env
 
       - name: Validate docker compose config
         run: docker compose --env-file .env config --quiet
+
+      - name: Lint Dockerfiles
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: caddy/Dockerfile
+          failure-threshold: warning
+
+      - name: Lint YAML
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          config_data: |
+            extends: relaxed
+            rules:
+              line-length:
+                max: 200
+                allow-non-breakable-inline-mappings: true
+              truthy:
+                allowed-values: ['true', 'false', 'on', 'off', 'yes', 'no']
+                check-keys: false
+
+      - name: Lint shell scripts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck scripts/*.sh init-scripts/*.sh
+
+      - name: Scan de secretos
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate Caddyfile
+        run: |
+          docker run --rm \
+            -v "$PWD/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -e CLOUDFLARE_API_TOKEN=dummy \
+            -e HOST_IP=127.0.0.1 \
+            -e N8N_CORS_ORIGIN=https://n8n.kime.lan \
+            caddy:2.10.2 caddy validate --config /etc/caddy/Caddyfile

@@ -19,8 +19,8 @@ Este laboratorio utiliza una arquitectura modular orquestada desde un único arc
 
 *   **Enrutamiento y Seguridad:** Caddy (Proxy Inverso con resolución de dominios locales `.lan` y manejo estricto de CORS).
 *   **Capa de Datos:** PostgreSQL 16 con extensión `pgvector` (aislado por esquemas para cada app), Redis 7 Alpine y MinIO para almacenamiento de objetos S3 local.
-*   **Desarrollo y Workflows:** Forgejo (Servidor Git), n8n (fijado en versión v1, modo regular) y Mailpit para intercepción de correos SMTP.
-*   **Observabilidad:** Homepage (Dashboard central conectado de forma segura al socket de Docker), Uptime Kuma (Monitoreo), Langfuse (Observabilidad para LLMs) y SonarQube (Calidad de código).
+*   **Desarrollo y Workflows:** Forgejo (Servidor Git), n8n (pineado en `1.123.27`, modo regular) y Mailpit para intercepción de correos SMTP.
+*   **Observabilidad:** Homepage (Dashboard vía `docker-socket-proxy`, sin acceso directo al socket), Uptime Kuma (Monitoreo), Langfuse (Observabilidad para LLMs) y SonarQube (Calidad de código).
 
 ---
 
@@ -61,14 +61,18 @@ Hemos abstraído la complejidad de Docker detrás de un `Makefile`. Ejecuta `mak
 
 *   `make up` - Levanta toda la infraestructura de forma ordenada respetando los *healthchecks* de la base de datos.
 *   `make down` - Apaga el laboratorio de manera segura.
+*   `make restart-one app=<nombre>` - Reinicia un solo servicio sin tocar el resto.
 *   `make ps` - Muestra el estado de salud de todos los contenedores.
 *   `make logs app=<nombre>` - Revisa los logs en vivo de un servicio (ej. `make logs app=n8n`).
-*   `make init-minio` - Crea buckets S3 requeridos en MinIO (Langfuse).
+*   `make init-minio` - Crea buckets S3 y el usuario dedicado de Langfuse.
 *   `make migrate-legacy` - Migra datos de directorios legacy (`postgres-data/`, etc.) a `data/`.
+*   `make migrate-caddy` - Migra `data/caddy*` a named volumes (TLS/ACME fuera del árbol del repo).
 *   `make backup` - Backup completo a `/mnt/storage/backups/` (Postgres, Redis, MinIO, dump nativo de Forgejo, clave de cifrado de n8n y Uptime Kuma) con retención de 7.
 *   `make backup-cron` - Instala el cron diario de backup (03:30).
 *   `make clean` - Apaga contenedores del proyecto y elimina imágenes dangling.
 *   `make clean-all` - Limpieza destructiva de todo el sistema Docker (requiere confirmación).
+
+Portainer opcional (profile): `COMPOSE_PROFILES=portainer make up`. Si ya corre como contenedor standalone en `edge`, no actives el profile.
 
 ---
 
@@ -87,12 +91,13 @@ Tus aplicaciones en `repositories/` pueden conectarse mágicamente a las bases d
 
 | En git (config) | Fuera de git (runtime) |
 |-----------------|------------------------|
-| `docker-compose.yml`, `*/docker-compose.yml` | `data/` — volúmenes de todos los servicios |
-| `Caddyfile`, `homepage/config/` | `forgejo/runner-data/` |
+| `docker-compose.yml`, `*/docker-compose.yml` | `data/` — volúmenes de apps (Postgres, n8n, etc.) |
+| `Caddyfile`, `caddy/certs/root.crt` (CA pública) | Named volumes `*_caddy_data` / `*_caddy_config` (TLS/ACME) |
+| `homepage/config/` | `forgejo/runner-data/` |
 | `.env.example`, `init-scripts/` | `.env` — secretos locales |
 | `scripts/`, `Makefile` | Directorios legacy (`postgres-data/`, etc.) |
 
-Los datos runtime viven bajo `data/<servicio>/`. Si migrás desde layouts antiguos, usá `make migrate-legacy`.
+Los datos runtime viven bajo `data/<servicio>/` (excepto Caddy, en named volumes). Si migrás desde layouts antiguos, usá `make migrate-legacy` y `make migrate-caddy`.
 
 ---
 

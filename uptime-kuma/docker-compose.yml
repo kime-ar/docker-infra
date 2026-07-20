@@ -6,6 +6,13 @@ services:
   uptime-kuma:
     image: louislam/uptime-kuma:1
     container_name: uptime-kuma
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
     volumes:
       - ../data/uptime-kuma:/app/data
     restart: unless-stopped

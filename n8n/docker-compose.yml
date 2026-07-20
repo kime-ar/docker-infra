@@ -6,7 +6,7 @@ networks:
 
 services:
   n8n:
-    image: docker.n8n.io/n8nio/n8n:1
+    image: docker.n8n.io/n8nio/n8n:1.123.27
     depends_on:
       postgres:
         condition: service_healthy
@@ -16,11 +16,16 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'        # Máximo 1 núcleo de CPU
-          memory: 1G         # Máximo 1GB de RAM (evita Out Of Memory)
+          cpus: '1.0'
+          memory: 1G
         reservations:
-          cpus: '0.25'       # CPU garantizada
-          memory: 512M       # RAM base reservada
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     environment:
       - TZ=America/Argentina/Buenos_Aires
       - GENERIC_TIMEZONE=America/Argentina/Buenos_Aires
