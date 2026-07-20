@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs ps clean clean-all pull init-minio migrate-legacy
+.PHONY: help up down restart logs ps clean clean-all pull init-minio migrate-legacy backup backup-cron
 
 # ==========================================
 # Variables Globales
@@ -21,6 +21,8 @@ help:
 	@echo "  make pull            - Descarga las últimas versiones de las imágenes"
 	@echo "  make init-minio      - Crea buckets S3 requeridos en MinIO"
 	@echo "  make migrate-legacy  - Migra datos de directorios legacy a data/"
+	@echo "  make backup          - Backup completo (Postgres, Redis, MinIO, Forgejo, n8n)"
+	@echo "  make backup-cron     - Instala cron diario de backup (03:30)"
 	@echo "  make clean           - Apaga contenedores y elimina recursos huérfanos del proyecto"
 	@echo "  make clean-all       - ⚠️  Limpieza destructiva de TODO el sistema Docker"
 
@@ -57,6 +59,12 @@ init-minio:
 
 migrate-legacy:
 	@bash scripts/migrate-legacy-data.sh
+
+backup:
+	@bash scripts/backup.sh
+
+backup-cron:
+	@bash scripts/install-backup-cron.sh
 
 clean:
 	@echo "🧹 Limpiando recursos huérfanos del proyecto..."

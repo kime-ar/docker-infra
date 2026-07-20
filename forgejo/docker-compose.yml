@@ -1,6 +1,11 @@
 networks:
   dev-network:
     external: true
+  # Red aislada para los jobs de CI: pueden clonar de Forgejo y salir a internet,
+  # pero NO alcanzan a Postgres/Redis/MinIO ni al resto de dev-network.
+  ci-jobs:
+    name: ci-jobs
+    driver: bridge
 
 services:
   server:
@@ -32,6 +37,7 @@ services:
       - "2323:22"
     networks:
       - dev-network
+      - ci-jobs   # los jobs de CI necesitan clonar vía http://forgejo:3000
 
   runner:
     image: code.forgejo.org/forgejo/runner:3.4.1
@@ -40,11 +46,13 @@ services:
     depends_on:
       - server
     networks:
-      - dev-network
+      - ci-jobs
     environment:
-      - ACTIONS_RUNNER_CONTAINER_NETWORK=dev-network
+      # Nota: con config.yaml presente, container.network del archivo es lo que
+      # gobierna; esta variable queda como respaldo coherente.
+      - ACTIONS_RUNNER_CONTAINER_NETWORK=ci-jobs
       - GITEA_RUNNER_REGISTRATION_TOKEN=${FORGEJO_RUNNER_TOKEN:?Definí FORGEJO_RUNNER_TOKEN en .env}
     command: sh -c "forgejo-runner register --no-interactive --instance http://forgejo:3000 --token $${GITEA_RUNNER_REGISTRATION_TOKEN} --name kime-ubuntu-runner --labels ubuntu-latest:docker://node:20-bullseye,ubuntu-22.04:docker://ubuntu:22.04 || true && forgejo-runner daemon --config /data/config.yaml"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock
       - ./runner-data:/data

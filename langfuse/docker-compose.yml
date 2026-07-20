@@ -35,7 +35,8 @@ services:
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en .env}@postgres:5432/postgres?schema=langfuse
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_URL=redis://redis:6379
+      - REDIS_AUTH=${REDIS_PASSWORD:?Definí REDIS_PASSWORD en .env}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
       - TELEMETRY_ENABLED=false
       - LANGFUSE_S3_EVENT_UPLOAD_BUCKET=${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse}
       - LANGFUSE_S3_EVENT_UPLOAD_REGION=us-east-1
@@ -82,7 +83,8 @@ services:
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres?schema=langfuse
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_URL=redis://redis:6379
+      - REDIS_AUTH=${REDIS_PASSWORD:?Definí REDIS_PASSWORD en .env}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
       - LANGFUSE_S3_EVENT_UPLOAD_BUCKET=${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse}
       - LANGFUSE_S3_EVENT_UPLOAD_REGION=us-east-1
       - LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID=${MINIO_ROOT_USER}

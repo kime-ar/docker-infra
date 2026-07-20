@@ -6,4 +6,5 @@ runner:
   capacity: 1
 
 container:
-  network: "dev-network"
+  # Red aislada de CI: los jobs alcanzan a Forgejo pero no a la capa de datos.
+  network: "ci-jobs"

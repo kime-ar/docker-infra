@@ -65,6 +65,8 @@ Hemos abstraído la complejidad de Docker detrás de un `Makefile`. Ejecuta `mak
 *   `make logs app=<nombre>` - Revisa los logs en vivo de un servicio (ej. `make logs app=n8n`).
 *   `make init-minio` - Crea buckets S3 requeridos en MinIO (Langfuse).
 *   `make migrate-legacy` - Migra datos de directorios legacy (`postgres-data/`, etc.) a `data/`.
+*   `make backup` - Backup completo a `/mnt/storage/backups/` (Postgres, Redis, MinIO, dump nativo de Forgejo, clave de cifrado de n8n y Uptime Kuma) con retención de 7.
+*   `make backup-cron` - Instala el cron diario de backup (03:30).
 *   `make clean` - Apaga contenedores del proyecto y elimina imágenes dangling.
 *   `make clean-all` - Limpieza destructiva de todo el sistema Docker (requiere confirmación).
 
