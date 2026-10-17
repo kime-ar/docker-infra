@@ -64,14 +64,6 @@
         server: my-docker
         container: langfuse-web
 
-    - Plane:
-        href: https://plane.garatortiz.xyz
-        icon: mdi-view-dashboard-outline
-        description: Gestión de proyectos
-        ping: plane.garatortiz.xyz
-        server: my-docker
-        container: plane-proxy
-
     - MinIO Consola:
         href: https://minio.garatortiz.xyz
         icon: minio.png

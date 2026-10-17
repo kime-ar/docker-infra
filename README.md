@@ -18,7 +18,7 @@ Internet / LAN
       │
       ▼
    [Caddy]  ── edge ──► Homepage, n8n, Forgejo, Langfuse, SonarQube,
-                         Plane, Release Dashboard, Uptime Kuma, Mailpit UI,
+                         Release Dashboard, Uptime Kuma, Mailpit UI,
                          MinIO, Portainer
       │
       │   (solo consumidores de datos; Caddy no llega a Postgres)
@@ -35,7 +35,7 @@ Internet / LAN
 | `dev-network` | Red permanente para apps externas en `repositories/` |
 | `ci-jobs` | Jobs del runner de Forgejo. Alcanzan Forgejo + SonarQube; **no** Postgres/Redis/MinIO |
 
-**Stack:** Caddy · Postgres 16 + pgvector · Redis 7 · MinIO · Forgejo + runner · n8n · Langfuse · SonarQube · Plane · Release Dashboard · Homepage (vía docker-socket-proxy) · Uptime Kuma · Mailpit · Portainer (opcional) · Watchtower (solo servicios con label).
+**Stack:** Caddy · Postgres 16 + pgvector · Redis 7 · MinIO · Forgejo + runner · n8n · Langfuse · SonarQube · Release Dashboard · Homepage (vía docker-socket-proxy) · Uptime Kuma · Mailpit · Portainer (opcional) · Watchtower (solo servicios con label).
 
 **Prácticas aplicadas:** secretos solo en `.env`, roles de Postgres por app, usuario S3 dedicado para Langfuse, límites de recursos, healthchecks en cascada, backups automatizables, imágenes pineadas.
 
@@ -82,7 +82,7 @@ Variables críticas:
 | `DOCKER_GID` | GID del grupo `docker` del host (runners de Forgejo) |
 | `FORGEJO_GIT_STORAGE` | Disco de repos Git (ej. `/mnt/storage/forgejo-data`) |
 | `POSTGRES_PASSWORD` | Superusuario Postgres (solo admin / migraciones) |
-| `N8N_DB_PASSWORD`, `LANGFUSE_DB_PASSWORD`, `SONAR_DB_PASSWORD`, `PLANE_DB_PASSWORD`, `N8N_APPS_DB_PASSWORD` | Roles por app |
+| `N8N_DB_PASSWORD`, `LANGFUSE_DB_PASSWORD`, `SONAR_DB_PASSWORD`, `N8N_APPS_DB_PASSWORD` | Roles por app |
 | `REDIS_PASSWORD` | Auth de Redis |
 | `MINIO_ROOT_*` + `LANGFUSE_S3_*` | Root MinIO + usuario de Langfuse |
 | `CLOUDFLARE_API_TOKEN` | ACME DNS para dominio público de Forgejo |
@@ -148,7 +148,6 @@ Dominios (TLS Let's Encrypt vía Cloudflare DNS; tráfico en LAN):
 | https://minio.garatortiz.xyz | MinIO consola | `minio:9001` |
 | https://docker.garatortiz.xyz | Portainer | `portainer:9443` |
 | https://git.garatortiz.xyz | Forgejo | `forgejo:3000` |
-| https://plane.garatortiz.xyz | Plane | `plane-proxy:80` |
 | https://releases.garatortiz.xyz | Release Dashboard | `release-dashboard:3000` (basic auth) |
 | https://api-local.garatortiz.xyz | API host | `{$HOST_IP}:3500` |
 | https://admin.garatortiz.xyz | Admin host | `:3501` |
@@ -218,7 +217,7 @@ Todos los comandos se ejecutan desde la raíz del repo (`docker-infra/`).
 
 Nombres de servicio útiles para `app=`:
 
-`postgres` · `redis` · `minio` · `mailpit` · `caddy` · `server` (Forgejo) · `runner` · `n8n` · `langfuse-web` · `langfuse-worker` · `sonarqube` · `homepage` · `docker-socket-proxy` · `uptime-kuma` · `release-dashboard` · `plane-proxy` · `watchtower`
+`postgres` · `redis` · `minio` · `mailpit` · `caddy` · `server` (Forgejo) · `runner` · `n8n` · `langfuse-web` · `langfuse-worker` · `sonarqube` · `homepage` · `docker-socket-proxy` · `uptime-kuma` · `release-dashboard` · `watchtower`
 
 ### Datos y provisión
 
