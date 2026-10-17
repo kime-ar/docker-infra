@@ -3,6 +3,13 @@
     cpu: true
     memory: true
     disk: /
+    cputemp: true
+    uptime: true
+    expanded: true
+
+- search:
+    provider: duckduckgo
+    target: _blank
 
 - datetime:
     text_size: xl
@@ -10,8 +17,10 @@
       date: style_long
       time: hr24
 
-- weather:
-    provider: openmeteo
+- openmeteo:
+    label: Santa Fe
     latitude: -31.6333
     longitude: -60.7
+    timezone: America/Argentina/Buenos_Aires
     units: metric
+    cache: 5

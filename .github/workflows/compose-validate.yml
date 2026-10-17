@@ -55,5 +55,5 @@ jobs:
             -v "$PWD/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
             -e CLOUDFLARE_API_TOKEN=dummy \
             -e HOST_IP=127.0.0.1 \
-            -e N8N_CORS_ORIGIN=https://n8n.kime.lan \
+            -e N8N_CORS_ORIGIN=https://n8n.garatortiz.xyz \
             caddy:2.10.2 caddy validate --config /etc/caddy/Caddyfile

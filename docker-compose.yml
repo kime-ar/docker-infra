@@ -7,6 +7,9 @@ include:
   - langfuse/docker-compose.yml
   - sonarqube/docker-compose.yml
   - portainer/docker-compose.yml
+  - release-dashboard/docker-compose.yml
+  - plane/docker-compose.yml
+  - watchtower/docker-compose.yml
 
 # Las tres redes las crea `make up` (target networks) de forma idempotente:
 #   edge        - ingress: Caddy y todo servicio que Caddy proxya
@@ -48,6 +51,12 @@ services:
       N8N_DB_PASSWORD: ${N8N_DB_PASSWORD:?Definí N8N_DB_PASSWORD en .env}
       LANGFUSE_DB_PASSWORD: ${LANGFUSE_DB_PASSWORD:?Definí LANGFUSE_DB_PASSWORD en .env}
       SONAR_DB_PASSWORD: ${SONAR_DB_PASSWORD:?Definí SONAR_DB_PASSWORD en .env}
+      PLANE_DB_PASSWORD: ${PLANE_DB_PASSWORD:?Definí PLANE_DB_PASSWORD en .env}
+      N8N_APPS_DB_PASSWORD: ${N8N_APPS_DB_PASSWORD:?Definí N8N_APPS_DB_PASSWORD en .env}
+    # Solo localhost del servidor: acceso remoto vía SSH tunnel
+    # (ej. desde la Mac: ssh -N -L 5432:127.0.0.1:5432 user@servidor)
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
@@ -89,6 +98,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    # Solo localhost: apps en el host (pnpm start:dev) y túneles SSH
+    ports:
+      - "127.0.0.1:6379:6379"
     volumes:
       - ./data/redis:/data
     networks:
@@ -112,24 +124,27 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Definí MINIO_ROOT_USER en .env}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Definí MINIO_ROOT_PASSWORD en .env}
-      # URLs públicas detrás de Caddy: API en s3.kime.lan, consola en minio.kime.lan
-      MINIO_SERVER_URL: https://s3.kime.lan
-      MINIO_BROWSER_REDIRECT_URL: https://minio.kime.lan
+      # URLs públicas detrás de Caddy (Let's Encrypt)
+      MINIO_SERVER_URL: https://s3.garatortiz.xyz
+      MINIO_BROWSER_REDIRECT_URL: https://minio.garatortiz.xyz
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 20s
+    # API S3 en localhost para SDKs desde el host; consola vía https://minio.garatortiz.xyz
+    ports:
+      - "127.0.0.1:9000:9000"
     volumes:
       - ./data/minio:/data
     networks:
       - data
-      - edge      # Caddy proxya la API S3 y la consola
+      - edge
       - dev-network
 
   mailpit:
-    image: axllent/mailpit:v1.30.5
+    image: axllent/mailpit:v1.31.1
     container_name: mailpit
     restart: unless-stopped
     deploy:
@@ -139,6 +154,9 @@ services:
           memory: 256M
         reservations:
           memory: 64M
+    # SMTP para apps en el host; UI web vía https://mail.garatortiz.xyz
+    ports:
+      - "127.0.0.1:1025:1025"
     volumes:
       - ./data/mailpit:/data
     networks:

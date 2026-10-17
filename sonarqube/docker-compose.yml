@@ -3,6 +3,11 @@ networks:
     external: true
   data:
     external: true
+  # Misma red que los jobs del runner: el scanner CI usa
+  # SONAR_HOST_URL=http://sonarqube:9000 sin ver Postgres/Redis/MinIO.
+  ci-jobs:
+    name: ci-jobs
+    external: true
 
 services:
   sonarqube:
@@ -11,6 +16,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     deploy:
       resources:
         limits:
@@ -41,6 +48,7 @@ services:
       - ../data/sonarqube/extensions:/opt/sonarqube/extensions
       - ../data/sonarqube/logs:/opt/sonarqube/logs
     networks:
-      - edge   # Caddy (sonar.kime.lan) y descarga de plugins
-      - data   # Postgres
+      - edge     # Caddy (sonar.kime.lan) y descarga de plugins
+      - data     # Postgres
+      - ci-jobs  # sonar-scanner desde Forgejo Actions
     restart: unless-stopped

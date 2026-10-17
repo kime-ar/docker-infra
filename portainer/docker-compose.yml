@@ -15,9 +15,11 @@ networks:
 services:
   portainer:
     profiles: [portainer]
-    image: portainer/portainer-ce:2.27.3
+    image: portainer/portainer-ce:2.45.0
     container_name: portainer
     restart: unless-stopped
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     deploy:
       resources:
         limits:

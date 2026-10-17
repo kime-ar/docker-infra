@@ -15,6 +15,8 @@ services:
     build: .
     container_name: caddy
     restart: unless-stopped
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     ports:
       - "80:80"
       - "443:443"
@@ -28,9 +30,10 @@ services:
     environment:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:?Definí CLOUDFLARE_API_TOKEN en .env}
       - HOST_IP=${HOST_IP:-192.168.100.111}
-      - N8N_CORS_ORIGIN=${N8N_CORS_ORIGIN:-https://n8n.kime.lan}
+      - N8N_CORS_ORIGIN=${N8N_CORS_ORIGIN:-https://n8n.garatortiz.xyz}
+      - RELEASE_DASHBOARD_USER=${RELEASE_DASHBOARD_USER:?Definí RELEASE_DASHBOARD_USER en .env}
+      - RELEASE_DASHBOARD_PASSWORD_HASH=${RELEASE_DASHBOARD_PASSWORD_HASH:?Definí RELEASE_DASHBOARD_PASSWORD_HASH en .env}
     healthcheck:
-      # La API admin escucha en 127.0.0.1:2019 (evitar localhost → IPv6)
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/config/"]
       interval: 30s
       timeout: 5s
@@ -42,17 +45,18 @@ services:
       - caddy_config:/config
     networks:
       edge:
-        # Aliases para que los contenedores de edge (Langfuse, Uptime Kuma,
-        # Homepage) resuelvan los dominios locales hacia Caddy vía Docker DNS;
-        # el DNS de la LAN los apunta a 127.0.0.1 y dentro de un contenedor
-        # eso no sirve.
+        # Aliases para que contenedores en edge resuelvan *.garatortiz.xyz
+        # hacia Caddy (si el DNS de Cloudflare apunta a la IP LAN del host,
+        # dentro de un contenedor a veces no llega bien; Docker DNS sí).
         aliases:
-          - s3.kime.lan
-          - minio.kime.lan
-          - home.kime.lan
-          - status.kime.lan
-          - n8n.kime.lan
-          - docker.kime.lan
-          - ai.kime.lan
-          - mail.kime.lan
-          - sonar.kime.lan
+          - s3.garatortiz.xyz
+          - minio.garatortiz.xyz
+          - home.garatortiz.xyz
+          - status.garatortiz.xyz
+          - n8n.garatortiz.xyz
+          - docker.garatortiz.xyz
+          - ai.garatortiz.xyz
+          - mail.garatortiz.xyz
+          - sonar.garatortiz.xyz
+          - git.garatortiz.xyz
+          - releases.garatortiz.xyz

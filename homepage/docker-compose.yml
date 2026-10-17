@@ -10,6 +10,8 @@ services:
     image: tecnativa/docker-socket-proxy:0.3.0
     container_name: docker-socket-proxy
     restart: unless-stopped
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     environment:
       # Solo lo que Homepage necesita para widgets de estado
       CONTAINERS: 1
@@ -33,10 +35,16 @@ services:
       - edge
 
   homepage:
-    image: ghcr.io/gethomepage/homepage:v0.9.11
+    image: ghcr.io/gethomepage/homepage:v0.10.0
     container_name: homepage
     depends_on:
       - docker-socket-proxy
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    environment:
+      HOMEPAGE_VAR_PORTAINER_KEY: ${HOMEPAGE_PORTAINER_KEY:?Definí HOMEPAGE_PORTAINER_KEY en .env}
+      HOMEPAGE_VAR_UPTIMEKUMA_SLUG: ${HOMEPAGE_UPTIMEKUMA_SLUG:?Definí HOMEPAGE_UPTIMEKUMA_SLUG en .env}
+      HOMEPAGE_VAR_FORGEJO_TOKEN: ${HOMEPAGE_FORGEJO_TOKEN:?Definí HOMEPAGE_FORGEJO_TOKEN en .env}
     deploy:
       resources:
         limits:

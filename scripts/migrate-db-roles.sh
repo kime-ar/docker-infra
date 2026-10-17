@@ -79,4 +79,25 @@ migrate_app sonar_app    sonar    "$(read_env SONAR_DB_PASSWORD)"
 docker exec postgres psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
   -c "GRANT CREATE ON DATABASE postgres TO n8n_app;"
 
-echo "Migración de roles completada. Reiniciá n8n, Langfuse y SonarQube con sus nuevas credenciales."
+docker exec postgres psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
+  -c "CREATE SCHEMA IF NOT EXISTS n8n_apps_schema;"
+migrate_app n8n_apps n8n_apps_schema "$(read_env N8N_APPS_DB_PASSWORD)"
+
+plane_password="$(read_env PLANE_DB_PASSWORD)"
+echo "==> Rol plane_app <- database plane"
+docker exec -i postgres psql -v ON_ERROR_STOP=1 -U postgres -d postgres <<SQL
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'plane_app') THEN
+    CREATE ROLE plane_app LOGIN;
+  END IF;
+END
+\$\$;
+ALTER ROLE plane_app WITH LOGIN PASSWORD '${plane_password}';
+SQL
+if ! docker exec postgres psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'plane'" | grep -q 1; then
+  docker exec postgres psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
+    -c "CREATE DATABASE plane OWNER plane_app"
+fi
+
+echo "Migración de roles completada. Reiniciá n8n, Langfuse, SonarQube y Plane con sus nuevas credenciales."

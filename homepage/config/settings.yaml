@@ -1,13 +1,24 @@
 ---
-# For configuration options and examples, please see:
-# https://gethomepage.dev/configs/settings/
+title: Kime Infra
+theme: dark
+color: slate
+
+layout:
+  Infraestructura:
+    style: row
+    columns: 2
+  Dev & CI:
+    style: row
+    columns: 3
+  Datos & IA:
+    style: row
+    columns: 3
+  Apps Kime:
+    style: row
+    columns: 4
+
+headerStyle: boxed
+hideVersion: true
 
 providers:
-  openweathermap: openweathermapapikey
-  weatherapi: weatherapiapikey
-
-# Configuraciones de red seguras
-disableStatusChecking: false
-layout:
-  services:
-    style: expanded
+  docker: my-docker

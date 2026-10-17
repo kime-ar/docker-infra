@@ -7,7 +7,11 @@ postgres-data/
 uptime-kuma/data/
 forgejo/forgejo-data/
 forgejo/runner-data/
+forgejo/runner-data-org/
 repomix-output.txt
+
+# Dumps locales. El backup vive en BACKUP_ROOT, no en el repo.
+*.sql.gz
 
 # Certificado público de Caddy (sí va a git); las claves privadas viven en named volume
 # caddy/certs/root.crt  — NO ignorar

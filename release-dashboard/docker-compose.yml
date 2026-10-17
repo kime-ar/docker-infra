@@ -1,0 +1,52 @@
+networks:
+  edge:
+    external: true
+
+volumes:
+  release_dashboard_kanto_git:
+    name: docker-infra_release_dashboard_kanto_git
+
+services:
+  release-dashboard:
+    build:
+      # Relative to this file (release-dashboard/), not docker-infra root:
+      #   ../../repositories/kanto → /home/.../projects/repositories/kanto
+      context: ${KANTO_REPO_PATH:-../../repositories/kanto}
+      dockerfile: apps/release-dashboard/Dockerfile
+    image: kime/release-dashboard:local
+    container_name: release-dashboard
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      # /api/health must stay free of the git mirror (lazy clone on first Catalog hit).
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - KANTO_GIT_MIRROR_PATH=/data/kanto.git
+      - KANTO_REPO_ROOT=/app
+      - GITEA_URL=${GITEA_URL:-http://forgejo:3000}
+      - GITEA_TOKEN=${GITEA_TOKEN:?Definí GITEA_TOKEN en .env}
+      - BOT_TOKEN=${BOT_TOKEN:?Definí BOT_TOKEN en .env}
+      - GITHUB_REPOSITORY=${GITHUB_REPOSITORY:?Definí GITHUB_REPOSITORY en .env (owner/repo)}
+      - VERCEL_TOKEN=${VERCEL_TOKEN:?Definí VERCEL_TOKEN en .env}
+      - VERCEL_ORG_ID=${VERCEL_ORG_ID:?Definí VERCEL_ORG_ID en .env}
+    volumes:
+      - release_dashboard_kanto_git:/data/kanto.git
+    networks:
+      - edge

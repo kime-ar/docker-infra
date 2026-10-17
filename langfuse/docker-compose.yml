@@ -24,16 +24,12 @@ services:
           memory: 1G
         reservations:
           memory: 256M
-    volumes:
-      # CA pública de Caddy (caddy/certs/root.crt) para validar TLS de s3.kime.lan
-      - ../caddy/certs/root.crt:/etc/ssl/certs/caddy-local-ca.pem:ro
     environment:
       - NODE_ENV=production
       # Con dos redes (edge+data), Next.js standalone se bindea a una sola
       # interfaz; 0.0.0.0 escucha en ambas para que Caddy pueda conectar.
       - HOSTNAME=0.0.0.0
-      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/caddy-local-ca.pem
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-https://ai.kime.lan}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-https://ai.garatortiz.xyz}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:?Definí NEXTAUTH_SECRET en .env}
       - SALT=${SALT:?Definí SALT en .env}
       - DATABASE_URL=postgresql://langfuse_app:${LANGFUSE_DB_PASSWORD:?Definí LANGFUSE_DB_PASSWORD en .env}@postgres:5432/postgres?schema=langfuse
@@ -53,7 +49,7 @@ services:
       - LANGFUSE_S3_MEDIA_UPLOAD_REGION=us-east-1
       - LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID=${LANGFUSE_S3_ACCESS_KEY}
       - LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY=${LANGFUSE_S3_SECRET_KEY}
-      - LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=https://s3.kime.lan
+      - LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=https://s3.garatortiz.xyz
       - LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE=true
       - LANGFUSE_S3_MEDIA_UPLOAD_PREFIX=media/
     healthcheck:
@@ -64,8 +60,9 @@ services:
       start_period: 60s
     restart: unless-stopped
     networks:
-      - edge   # Caddy (ai.kime.lan) y s3.kime.lan para media
+      - edge   # Caddy (ai.garatortiz.xyz) y s3.garatortiz.xyz para media
       - data   # Postgres, Redis, MinIO
+      - dev-network
 
   langfuse-worker:
     image: langfuse/langfuse-worker:2
@@ -84,11 +81,8 @@ services:
           memory: 1G
         reservations:
           memory: 256M
-    volumes:
-      - ../caddy/certs/root.crt:/etc/ssl/certs/caddy-local-ca.pem:ro
     environment:
       - NODE_ENV=production
-      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/caddy-local-ca.pem
       - DATABASE_URL=postgresql://langfuse_app:${LANGFUSE_DB_PASSWORD:?Definí LANGFUSE_DB_PASSWORD en .env}@postgres:5432/postgres?schema=langfuse
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -105,11 +99,10 @@ services:
       - LANGFUSE_S3_MEDIA_UPLOAD_REGION=us-east-1
       - LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID=${LANGFUSE_S3_ACCESS_KEY}
       - LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY=${LANGFUSE_S3_SECRET_KEY}
-      - LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=https://s3.kime.lan
+      - LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=https://s3.garatortiz.xyz
       - LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE=true
       - LANGFUSE_S3_MEDIA_UPLOAD_PREFIX=media/
     healthcheck:
-      # El worker escucha en 3030; /api/health es el endpoint documentado.
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3030/api/health || exit 1"]
       interval: 30s
       timeout: 5s
@@ -117,5 +110,5 @@ services:
       start_period: 40s
     restart: unless-stopped
     networks:
-      - edge   # s3.kime.lan (media) y egress
+      - edge   # s3.garatortiz.xyz (media) y egress
       - data   # Postgres, Redis, MinIO

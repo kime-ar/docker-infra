@@ -1,27 +1,25 @@
-# Bloque global — un token de Cloudflare con permiso Zone:DNS:Edit sobre garatortiz.xyz
+# Bloque global — token Cloudflare con Zone:DNS:Edit sobre garatortiz.xyz
+# Certificados Let's Encrypt vía DNS challenge (válidos en LAN; no requiere
+# exponer el lab a Internet). Registros A → IP LAN del servidor, proxy OFF.
 {
     acme_dns cloudflare {$CLOUDFLARE_API_TOKEN}
 }
 
-# --- INFRAESTRUCTURA EN DOCKER (Resolución interna por nombre de servicio) ---
+(noindex) {
+    header X-Robots-Tag "noindex, nofollow"
+}
 
-# Homepage
-home.kime.lan {
-    tls internal
+# --- INFRAESTRUCTURA EN DOCKER ---
+
+home.garatortiz.xyz {
     reverse_proxy homepage:3000
 }
 
-# Uptime Kuma - Monitoreo de Sitios
-status.kime.lan {
-    tls internal
+status.garatortiz.xyz {
     reverse_proxy uptime-kuma:3001
 }
 
-# n8n - Automatización y Webhooks locales
-n8n.kime.lan {
-    tls internal
-
-    # Manejo de Preflight CORS (Peticiones OPTIONS)
+n8n.garatortiz.xyz {
     @cors_preflight method OPTIONS
     handle @cors_preflight {
         header Access-Control-Allow-Origin {$N8N_CORS_ORIGIN}
@@ -31,7 +29,6 @@ n8n.kime.lan {
         respond "" 204
     }
 
-    # Peticiones normales (GET, POST, etc.)
     handle {
         header Access-Control-Allow-Origin {$N8N_CORS_ORIGIN}
         header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
@@ -41,10 +38,7 @@ n8n.kime.lan {
     }
 }
 
-# Portainer - Gestor de docker
-docker.kime.lan {
-    tls internal
-
+docker.garatortiz.xyz {
     reverse_proxy portainer:9443 {
         transport http {
             tls
@@ -53,71 +47,88 @@ docker.kime.lan {
     }
 }
 
-# Forgejo - Tu Git auto-alojado
 git.garatortiz.xyz {
-    reverse_proxy forgejo:3000
+    reverse_proxy forgejo:3000 {
+        flush_interval -1
+
+        transport http {
+            read_timeout 0s
+            write_timeout 0s
+            response_header_timeout 0s
+        }
+    }
 }
 
-# Langfuse - Observabilidad de Chatbots e IA
-ai.kime.lan {
-    tls internal
+plane.garatortiz.xyz {
+    reverse_proxy plane-proxy:80
+}
+
+releases.garatortiz.xyz {
+    basic_auth {
+        {$RELEASE_DASHBOARD_USER} {$RELEASE_DASHBOARD_PASSWORD_HASH}
+    }
+    reverse_proxy release-dashboard:3000
+}
+
+ai.garatortiz.xyz {
     reverse_proxy langfuse-web:3000
 }
 
-# Mailpit - Captura de Emails (Interfaz Web)
-mail.kime.lan {
-    tls internal
+mail.garatortiz.xyz {
     reverse_proxy mailpit:8025
 }
 
-# MinIO - API S3 (URLs prefirmadas de Langfuse y clientes S3)
-s3.kime.lan {
-    tls internal
+s3.garatortiz.xyz {
     reverse_proxy minio:9000
 }
 
-# MinIO - Consola de Administración
-minio.kime.lan {
-    tls internal
+minio.garatortiz.xyz {
     reverse_proxy minio:9001
 }
 
-# SonarQube - Calidad de Código
-sonar.kime.lan {
-    tls internal
+sonar.garatortiz.xyz {
     reverse_proxy sonarqube:9000
 }
 
-# --- APIS Y FRONTENDS EN DESARROLLO (Viven en tu MacBook o puertos del Host) ---
+# --- APPS / APIS EN EL HOST (puertos desde 3500) ---
 
-# Kodama API (NestJS)
-api.kime.lan {
-    tls internal
+api-local.garatortiz.xyz {
     reverse_proxy {$HOST_IP}:3500
 }
 
-# Landingo y entornos de administración
-admin.kime.lan, admin-*.kime.lan {
-    tls internal
+admin.garatortiz.xyz, *.admin.garatortiz.xyz {
     reverse_proxy {$HOST_IP}:3501
 }
 
-kime.lan {
-    tls internal
+kime.garatortiz.xyz {
     reverse_proxy {$HOST_IP}:3502
 }
 
-garatortiz.kime.lan {
-    tls internal
+landing.garatortiz.xyz {
+    import noindex
     reverse_proxy {$HOST_IP}:3503
 }
 
-loyalty.kime.lan {
-    tls internal
+loyalty.garatortiz.xyz {
     reverse_proxy {$HOST_IP}:3504
 }
 
-cows.kime.lan {
-    tls internal
+cows.garatortiz.xyz {
     reverse_proxy {$HOST_IP}:3505
+}
+
+blog.garatortiz.xyz {
+    reverse_proxy {$HOST_IP}:3506
+}
+
+lab.garatortiz.xyz {
+    reverse_proxy {$HOST_IP}:3507
+}
+
+aka.garatortiz.xyz {
+    reverse_proxy {$HOST_IP}:3508
+}
+
+radar84.garatortiz.xyz {
+    reverse_proxy {$HOST_IP}:3509
 }

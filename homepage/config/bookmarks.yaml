@@ -1,18 +1,16 @@
 ---
-# For configuration options and examples, please see:
-# https://gethomepage.dev/configs/bookmarks
+- Infra:
+    - Cloudflare:
+        - abbr: CF
+          href: https://dash.cloudflare.com/
+    - Vercel:
+        - abbr: VC
+          href: https://vercel.com/dashboard
 
-- Developer:
-    - Github:
+- Dev:
+    - GitHub:
         - abbr: GH
           href: https://github.com/
-
-- Social:
-    - Reddit:
-        - abbr: RE
-          href: https://reddit.com/
-
-- Entertainment:
-    - YouTube:
-        - abbr: YT
-          href: https://youtube.com/
+    - npm:
+        - abbr: NPM
+          href: https://www.npmjs.com/

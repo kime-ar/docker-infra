@@ -1,87 +1,124 @@
 ---
-- Infraestructura Base:
+- Infraestructura:
     - Portainer:
-        icon: portainer
-        href: https://docker.kime.lan
-        description: Gestor de Contenedores
-        server: my-server
-        container: portainer
-
-    - Caddy:
-        icon: caddy
-        href: https://home.kime.lan
-        description: Reverse Proxy
-        server: my-server
-        container: caddy
-
-    - Forgejo:
-        icon: forgejo
-        href: https://git.garatortiz.xyz
-        description: Servidor Git
-        server: my-server
-        container: forgejo
-
-    - Homepage:
-        icon: homepage
-        href: https://home.kime.lan
-        description: Dashboard central
-        server: my-server
-        container: homepage
+        href: https://docker.garatortiz.xyz
+        icon: portainer.png
+        description: Gestión de contenedores Docker
+        widget:
+          type: portainer
+          url: https://portainer:9443
+          env: 3
+          key: "{{HOMEPAGE_VAR_PORTAINER_KEY}}"
 
     - Uptime Kuma:
-        icon: uptime-kuma
-        href: https://status.kime.lan
-        description: Monitoreo de sitios
-        server: my-server
-        container: uptime-kuma
+        href: https://status.garatortiz.xyz
+        icon: uptime-kuma.png
+        description: Monitoreo de disponibilidad
+        widget:
+          type: uptimekuma
+          url: http://uptime-kuma:3001
+          slug: "{{HOMEPAGE_VAR_UPTIMEKUMA_SLUG}}"
 
-- Herramientas de Desarrollo:
+- Dev & CI:
+    - Forgejo:
+        href: https://git.garatortiz.xyz
+        icon: forgejo.png
+        description: Git self-hosted + runners de CI
+        server: my-docker
+        container: forgejo
+        widget:
+          type: gitea
+          url: http://forgejo:3000
+          key: "{{HOMEPAGE_VAR_FORGEJO_TOKEN}}"
+
+    - SonarQube:
+        href: https://sonar.garatortiz.xyz
+        icon: sonarqube.png
+        description: Calidad de código y análisis estático
+        ping: sonar.garatortiz.xyz
+        server: my-docker
+        container: sonarqube_app
+
+    - Release Dashboard:
+        href: https://releases.garatortiz.xyz
+        icon: mdi-rocket-launch-outline
+        description: Catálogo de releases y promoción de kanto
+        ping: releases.garatortiz.xyz
+        server: my-docker
+        container: release-dashboard
+
+- Datos & IA:
     - n8n:
-        icon: n8n
-        href: https://n8n.kime.lan
-        description: Automatización de Workflows
-        server: my-server
+        href: https://n8n.garatortiz.xyz
+        icon: n8n.png
+        description: Automatización de workflows
+        ping: n8n.garatortiz.xyz
+        server: my-docker
         container: n8n
 
-    - MinIO:
-        icon: minio
-        href: https://minio.kime.lan
-        description: Almacenamiento de Objetos S3
-        server: my-server
+    - Langfuse:
+        href: https://ai.garatortiz.xyz
+        icon: mdi-brain
+        description: Observabilidad de LLMs
+        ping: ai.garatortiz.xyz
+        server: my-docker
+        container: langfuse-web
+
+    - Plane:
+        href: https://plane.garatortiz.xyz
+        icon: mdi-view-dashboard-outline
+        description: Gestión de proyectos
+        ping: plane.garatortiz.xyz
+        server: my-docker
+        container: plane-proxy
+
+    - MinIO Consola:
+        href: https://minio.garatortiz.xyz
+        icon: minio.png
+        description: Almacenamiento S3 self-hosted
+        server: my-docker
         container: minio
 
     - Mailpit:
-        icon: mailpit
-        href: https://mail.kime.lan
-        description: Servidor de correo de pruebas
-        server: my-server
+        href: https://mail.garatortiz.xyz
+        icon: mailpit.png
+        description: Bandeja de pruebas SMTP
+        server: my-docker
         container: mailpit
 
-    - Langfuse:
-        icon: langfuse
-        href: https://ai.kime.lan
-        description: Observabilidad de IA
-        server: my-server
-        container: langfuse-web
+- Apps Kime:
+    - Kime App:
+        href: https://kime.garatortiz.xyz
+        icon: mdi-application-brackets-outline
+        description: App principal (host :3502)
+        ping: kime.garatortiz.xyz
 
-    - SonarQube:
-        icon: sonarqube
-        href: https://sonar.kime.lan
-        description: Calidad de código
-        server: my-server
-        container: sonarqube_app
+    - Landing:
+        href: https://landing.garatortiz.xyz
+        icon: mdi-web
+        description: Landing (host :3503)
+        ping: landing.garatortiz.xyz
 
-- Mis Aplicaciones & APIs:
-    - API Kodama:
-        icon: nodejs
-        href: https://api.kime.lan/status
-        description: Multi-tenant API Core
-        server: my-server
-        container: kodama-api
-        widget:
-          type: customapi
-          url: https://api.kime.lan/api/health
-          mappings:
-            - status:
-                value: OK
-                color: green
+    - Loyalty:
+        href: https://loyalty.garatortiz.xyz
+        icon: mdi-star-circle-outline
+        description: Programa de lealtad (host :3504)
+        ping: loyalty.garatortiz.xyz
+
+    - Blog:
+        href: https://blog.garatortiz.xyz
+        icon: mdi-post-outline
+        description: Blog (host :3506)
+        ping: blog.garatortiz.xyz
+
+    - Admin:
+        href: https://admin.garatortiz.xyz
+        icon: mdi-shield-account-outline
+        description: Panel admin (host :3501)
+        ping: admin.garatortiz.xyz
+
+    - Radar84:
+        href: https://radar84.garatortiz.xyz
+        icon: mdi-shield-account-outline
+        description: Panel admin (host :3509)
+        ping: radar84.garatortiz.xyz

@@ -6,7 +6,7 @@ networks:
 
 services:
   n8n:
-    image: docker.n8n.io/n8nio/n8n:1.123.27
+    image: docker.n8n.io/n8nio/n8n:2.36.5
     depends_on:
       postgres:
         condition: service_healthy
@@ -34,8 +34,8 @@ services:
       # Detrás de Caddy con TLS: cookies seguras y URLs públicas correctas
       - N8N_SECURE_COOKIE=true
       - N8N_PROXY_HOPS=1
-      - WEBHOOK_URL=https://n8n.kime.lan/
-      - N8N_EDITOR_BASE_URL=https://n8n.kime.lan/
+      - WEBHOOK_URL=https://n8n.garatortiz.xyz/
+      - N8N_EDITOR_BASE_URL=https://n8n.garatortiz.xyz/
       # Conexión al Postgres compartido apuntando al schema aislado de n8n
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=postgres

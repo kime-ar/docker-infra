@@ -1,0 +1,41 @@
+# Watchtower revisa las imágenes de los contenedores marcados con la label
+# com.centurylinklabs.watchtower.enable=true y las actualiza (pull + recreate).
+#
+# No se une a `edge` ni a `data`: usa la red default del proyecto (no
+# declarada acá), que sí tiene salida a internet, para consultar registries y
+# mandar notificaciones. Necesita el socket de Docker para pull + recreate,
+# igual que Portainer.
+#
+# Opt-in por servicio: sin la label, Watchtower ignora el contenedor. Así no
+# toca por accidente lo que está pineado a propósito (postgres, redis, minio,
+# n8n) sin que vos lo decidas explícitamente.
+
+services:
+  watchtower:
+    image: ghcr.io/nicholas-fedor/watchtower:latest
+    container_name: watchtower
+    restart: on-failure:3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          memory: 32M
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+      # Solo actualiza contenedores con la label watchtower.enable=true
+      - WATCHTOWER_LABEL_ENABLE=true
+      # Borra la imagen vieja después de actualizar (no acumula versiones)
+      - WATCHTOWER_CLEANUP=true
+      # Corre una vez por día a las 04:00 (según el TZ de arriba)
+      - WATCHTOWER_SCHEDULE=0 0 4 * * *
+      # Notificaciones vía shoutrrr (discord, telegram, ntfy, slack, etc.)
+      # ver: https://containrrr.dev/shoutrrr/latest/services/overview/
+      - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_NOTIFICATION_URL}
+      - WATCHTOWER_NOTIFICATIONS_LEVEL=info
+      # En true: solo notifica qué actualizaría, no toca nada. Dejalo así
+      # una semana para ver el diagnóstico completo antes de soltarlo.
+      - WATCHTOWER_MONITOR_ONLY=${WATCHTOWER_MONITOR_ONLY:-false}
+    volumes:
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock

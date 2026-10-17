@@ -18,7 +18,8 @@ Internet / LAN
       │
       ▼
    [Caddy]  ── edge ──► Homepage, n8n, Forgejo, Langfuse, SonarQube,
-                         Uptime Kuma, Mailpit UI, MinIO, Portainer
+                         Plane, Release Dashboard, Uptime Kuma, Mailpit UI,
+                         MinIO, Portainer
       │
       │   (solo consumidores de datos; Caddy no llega a Postgres)
       ▼
@@ -32,9 +33,9 @@ Internet / LAN
 | `edge` | Ingress: Caddy y todo lo que proxya |
 | `data` | Capa de datos (`internal`: sin salida a internet) |
 | `dev-network` | Red permanente para apps externas en `repositories/` |
-| `ci-jobs` | Jobs del runner de Forgejo (sin acceso a la capa de datos) |
+| `ci-jobs` | Jobs del runner de Forgejo. Alcanzan Forgejo + SonarQube; **no** Postgres/Redis/MinIO |
 
-**Stack:** Caddy · Postgres 16 + pgvector · Redis 7 · MinIO · Forgejo + runner · n8n · Langfuse · SonarQube · Homepage (vía docker-socket-proxy) · Uptime Kuma · Mailpit · Portainer (opcional).
+**Stack:** Caddy · Postgres 16 + pgvector · Redis 7 · MinIO · Forgejo + runner · n8n · Langfuse · SonarQube · Plane · Release Dashboard · Homepage (vía docker-socket-proxy) · Uptime Kuma · Mailpit · Portainer (opcional) · Watchtower (solo servicios con label).
 
 **Prácticas aplicadas:** secretos solo en `.env`, roles de Postgres por app, usuario S3 dedicado para Langfuse, límites de recursos, healthchecks en cascada, backups automatizables, imágenes pineadas.
 
@@ -44,7 +45,7 @@ Internet / LAN
 
 - Ubuntu/Debian con **Docker** y **Docker Compose** (v2)
 - `make` (`sudo apt install make`)
-- DNS local o hosts para `*.kime.lan` apuntando al servidor (y el dominio público de Forgejo si aplica)
+- DNS en Cloudflare: registros **A** de cada subdominio → IP LAN del servidor, **proxy OFF** (tráfico local; certs Let's Encrypt vía DNS challenge)
 - Disco de backups recomendado en `/mnt/storage` (ajustable)
 
 ---
@@ -78,9 +79,10 @@ Variables críticas:
 |----------|----------|
 | `HOST_IP` | IP del host (APIs en desarrollo vía Caddy) |
 | `DOCKER_SOCKET` | Ruta del socket (`/var/run/docker.sock` en instalaciones nativas) |
+| `DOCKER_GID` | GID del grupo `docker` del host (runners de Forgejo) |
 | `FORGEJO_GIT_STORAGE` | Disco de repos Git (ej. `/mnt/storage/forgejo-data`) |
 | `POSTGRES_PASSWORD` | Superusuario Postgres (solo admin / migraciones) |
-| `N8N_DB_PASSWORD`, `LANGFUSE_DB_PASSWORD`, `SONAR_DB_PASSWORD` | Roles por app |
+| `N8N_DB_PASSWORD`, `LANGFUSE_DB_PASSWORD`, `SONAR_DB_PASSWORD`, `PLANE_DB_PASSWORD`, `N8N_APPS_DB_PASSWORD` | Roles por app |
 | `REDIS_PASSWORD` | Auth de Redis |
 | `MINIO_ROOT_*` + `LANGFUSE_S3_*` | Root MinIO + usuario de Langfuse |
 | `CLOUDFLARE_API_TOKEN` | ACME DNS para dominio público de Forgejo |
@@ -132,21 +134,34 @@ make ps
 make logs app=caddy   # Ctrl+C para salir
 ```
 
-Dominios típicos (TLS interno `.lan`, excepto Forgejo público):
+Dominios (TLS Let's Encrypt vía Cloudflare DNS; tráfico en LAN):
 
-| URL | Servicio |
-|-----|----------|
-| https://home.kime.lan | Homepage |
-| https://n8n.kime.lan | n8n |
-| https://ai.kime.lan | Langfuse |
-| https://sonar.kime.lan | SonarQube |
-| https://status.kime.lan | Uptime Kuma |
-| https://mail.kime.lan | Mailpit |
-| https://s3.kime.lan | MinIO API S3 |
-| https://minio.kime.lan | MinIO consola |
-| https://docker.kime.lan | Portainer |
-| https://git.garatortiz.xyz | Forgejo |
-| `host:2323` | Forgejo SSH |
+| URL | Servicio | Upstream |
+|-----|----------|----------|
+| https://home.garatortiz.xyz | Homepage | `homepage:3000` |
+| https://n8n.garatortiz.xyz | n8n | `n8n:5678` |
+| https://ai.garatortiz.xyz | Langfuse | `langfuse-web:3000` |
+| https://sonar.garatortiz.xyz | SonarQube | `sonarqube:9000` |
+| https://status.garatortiz.xyz | Uptime Kuma | `uptime-kuma:3001` |
+| https://mail.garatortiz.xyz | Mailpit UI | `mailpit:8025` |
+| https://s3.garatortiz.xyz | MinIO API S3 | `minio:9000` |
+| https://minio.garatortiz.xyz | MinIO consola | `minio:9001` |
+| https://docker.garatortiz.xyz | Portainer | `portainer:9443` |
+| https://git.garatortiz.xyz | Forgejo | `forgejo:3000` |
+| https://plane.garatortiz.xyz | Plane | `plane-proxy:80` |
+| https://releases.garatortiz.xyz | Release Dashboard | `release-dashboard:3000` (basic auth) |
+| https://api-local.garatortiz.xyz | API host | `{$HOST_IP}:3500` |
+| https://admin.garatortiz.xyz | Admin host | `:3501` |
+| https://\*.admin.garatortiz.xyz | Previews admin | `:3501` |
+| https://kime.garatortiz.xyz | App Kime | `:3502` |
+| https://landing.garatortiz.xyz | Landing | `:3503` |
+| https://loyalty.garatortiz.xyz | Loyalty | `:3504` |
+| https://cows.garatortiz.xyz | Cows | `:3505` |
+| https://blog.garatortiz.xyz | Blog | `:3506` |
+| https://lab.garatortiz.xyz | Lab | `:3507` |
+| https://aka.garatortiz.xyz | Aka | `:3508` |
+| https://radar84.garatortiz.xyz | Radar84 | `:3509` |
+| `host:2323` | Forgejo SSH | — |
 
 ---
 
@@ -203,7 +218,7 @@ Todos los comandos se ejecutan desde la raíz del repo (`docker-infra/`).
 
 Nombres de servicio útiles para `app=`:
 
-`postgres` · `redis` · `minio` · `mailpit` · `caddy` · `server` (Forgejo) · `runner` · `n8n` · `langfuse-web` · `langfuse-worker` · `sonarqube` · `homepage` · `docker-socket-proxy` · `uptime-kuma`
+`postgres` · `redis` · `minio` · `mailpit` · `caddy` · `server` (Forgejo) · `runner` · `n8n` · `langfuse-web` · `langfuse-worker` · `sonarqube` · `homepage` · `docker-socket-proxy` · `uptime-kuma` · `release-dashboard` · `plane-proxy` · `watchtower`
 
 ### Datos y provisión
 
@@ -309,6 +324,72 @@ docker compose --env-file .env up -d caddy
 1. Red `dev-network` (external).
 2. Credenciales propias (ideal: rol + schema en Postgres; plantilla en `scripts/migrate-db-roles.sh`).
 3. No montes el socket de Docker ni te unas a `ci-jobs` salvo que sepas por qué.
+
+Runners offline de Forgejo (requiere `curl` y `jq`):
+
+```bash
+FORGEJO_TOKEN=... FORGEJO_URL=https://git.garatortiz.xyz bash scripts/clean-forgejo-runners.sh
+```
+
+Desde un workflow de Forgejo Actions, SonarQube se alcanza por la red interna del runner:
+
+```bash
+# Secret / variable del repo de la app
+SONAR_HOST_URL=http://sonarqube:9000
+```
+
+(`https://sonar.garatortiz.xyz` es solo para el navegador vía Caddy; el scanner en `ci-jobs` debe usar el hostname Docker.)
+
+### Desarrollo en el host (`pnpm start:dev`, Nest, etc.)
+
+Las apps de `repositories/` que corren **en el host** (no en Docker) usan una superficie TCP solo en **localhost del servidor**. No están expuestas a la LAN.
+
+| Servicio | Bind | Notas |
+|----------|------|--------|
+| Postgres | `127.0.0.1:5432` | User/schema propios; password del `.env` de la infra |
+| Redis | `127.0.0.1:6379` | Requiere `REDIS_PASSWORD` |
+| MinIO (API S3) | `127.0.0.1:9000` | `MINIO_ROOT_*` o usuario de app; path-style |
+| Mailpit (SMTP) | `127.0.0.1:1025` | Sin auth típica en lab |
+| Consola MinIO / UI Mailpit / Langfuse / … | `https://*.garatortiz.xyz` | Vía Caddy (Let's Encrypt) |
+
+Ejemplo de variables para una API en el host (ajustá nombres a tu app):
+
+```bash
+DATABASE_URL=postgresql://USER:PASS@127.0.0.1:5432/postgres?schema=silphcore
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=<REDIS_PASSWORD de docker-infra/.env>
+# o: REDIS_URL=redis://:<REDIS_PASSWORD>@127.0.0.1:6379
+
+S3_ENDPOINT=http://127.0.0.1:9000
+S3_ACCESS_KEY_ID=<MINIO_ROOT_USER o key de app>
+S3_SECRET_ACCESS_KEY=<MINIO_ROOT_PASSWORD o secret de app>
+S3_FORCE_PATH_STYLE=true
+
+SMTP_HOST=127.0.0.1
+SMTP_PORT=1025
+```
+
+Si la app corre **como contenedor** en `dev-network`, usá hostnames Docker (`postgres`, `redis`, `minio`, `mailpit`) y **no** hace falta esta superficie localhost.
+
+### Conectar desde la Mac (DBeaver / clientes)
+
+Los puertos solo escuchan en el servidor. Desde la Mac usá túnel SSH (o el SSH Tunnel de DBeaver):
+
+```bash
+ssh -N -p 2222 -L 5432:127.0.0.1:5432 matias@<IP_DEL_SERVIDOR>
+# opcional: -L 6379:127.0.0.1:6379 -L 9000:127.0.0.1:9000
+```
+
+| Campo DBeaver | Valor |
+|---------------|--------|
+| Host | `127.0.0.1` |
+| Port | `5432` |
+| Database | `postgres` |
+| User | `postgres` o un rol de app (`n8n_app`, …) |
+| Password | el del `.env` correspondiente |
+| Schema (opcional) | `n8n`, `langfuse`, `sonar`, `silphcore`, … |
+| SSH (si usás el de DBeaver) | host del servidor, puerto `2222`, user `matias` |
 
 ### Restaurar desde backup (resumen)
 
