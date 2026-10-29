@@ -31,9 +31,9 @@ Actualizar a la última versión upstream: `make dcal-update` (git pull + rebuil
 
 ## Decisiones
 
-- **Base `dcal` propia, rol `dcal_app` dueño** (patrón Plane, no schema): las migraciones Drizzle asumen `public` y así queda igual que el Postgres dedicado de Railway. Entra solo en `make backup` vía `pg_dumpall`.
+- **Base `dcal` propia, rol `dcal_app` dueño** (no schema; en install limpio la crea `init-scripts/02-app-roles.sh`, en una instancia existente `make init-dcal`): las migraciones Drizzle asumen `public` y así queda igual que el Postgres dedicado de Railway. Entra solo en `make backup` vía `pg_dumpall`.
 - **Mails a Mailpit** (`EMAIL_PROVIDER=smtp`, `mailpit:1025`): confirmaciones, reprogramaciones y recordatorios se ven en https://mail.garatortiz.xyz.
-- **Servicios prefijados `dcal-*`**: Plane ya usa `api` y `web`, y con `include:` los nombres son globales.
+- **Servicios prefijados `dcal-*`**: con `include:` los nombres son globales al proyecto.
 - **Web → API por red interna** (`API_URL=http://dcal-api:4000` + `INTERNAL_API_SECRET`): el rate limit cuenta por visitante y no por el server del web.
 - **Sin label de Watchtower**: imagen local, se actualiza con `make dcal-update`.
 

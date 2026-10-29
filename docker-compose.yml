@@ -53,6 +53,7 @@ services:
       LANGFUSE_DB_PASSWORD: ${LANGFUSE_DB_PASSWORD:?Definí LANGFUSE_DB_PASSWORD en .env}
       SONAR_DB_PASSWORD: ${SONAR_DB_PASSWORD:?Definí SONAR_DB_PASSWORD en .env}
       N8N_APPS_DB_PASSWORD: ${N8N_APPS_DB_PASSWORD:?Definí N8N_APPS_DB_PASSWORD en .env}
+      DCAL_DB_PASSWORD: ${DCAL_DB_PASSWORD:?Definí DCAL_DB_PASSWORD en .env}
     # Solo localhost del servidor: acceso remoto vía SSH tunnel
     # (ej. desde la Mac: ssh -N -L 5432:127.0.0.1:5432 user@servidor)
     ports:

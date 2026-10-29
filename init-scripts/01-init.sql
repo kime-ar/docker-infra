@@ -7,4 +7,5 @@ CREATE SCHEMA IF NOT EXISTS langfuse;
 CREATE SCHEMA IF NOT EXISTS silphcore;
 CREATE SCHEMA IF NOT EXISTS landingo;
 CREATE SCHEMA IF NOT EXISTS sonar;
+-- apps ejecutadas desde n8n (02-app-roles.sh le asigna dueño)
 CREATE SCHEMA IF NOT EXISTS n8n_apps_schema;

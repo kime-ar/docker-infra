@@ -7,8 +7,8 @@
 #   cd ~/projects/repositories && git clone https://github.com/Dapta-Tech/dapta-calendars-slate.git dcal
 #   cd ~/projects/docker-infra && make init-dcal && make up
 #
-# Nombres prefijados (dcal-*): plane ya usa los servicios `api` y `web`, y con
-# `include:` los nombres de servicio son globales al proyecto.
+# Nombres prefijados (dcal-*): con `include:` los nombres de servicio son
+# globales al proyecto, y `api`/`web` a secas son demasiado genéricos.
 #
 # Topología:
 #   Caddy ─edge─► dcal-web:3000  (cal.garatortiz.xyz)
