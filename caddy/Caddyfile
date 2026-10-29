@@ -86,6 +86,14 @@ sonar.garatortiz.xyz {
     reverse_proxy sonarqube:9000
 }
 
+cal.garatortiz.xyz {
+    reverse_proxy dcal-web:3000
+}
+
+cal-api.garatortiz.xyz {
+    reverse_proxy dcal-api:4000
+}
+
 # --- APPS / APIS EN EL HOST (puertos desde 3500) ---
 
 api-local.garatortiz.xyz {
@@ -126,5 +134,9 @@ aka.garatortiz.xyz {
 }
 
 radar84.garatortiz.xyz {
-    reverse_proxy {$HOST_IP}:3509
+    import noindex
+    basic_auth {
+        {$RADAR84_USER} {$RADAR84_PASSWORD_HASH}
+    }
+    reverse_proxy radar84:3000
 }

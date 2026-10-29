@@ -8,7 +8,9 @@ include:
   - sonarqube/docker-compose.yml
   - portainer/docker-compose.yml
   - release-dashboard/docker-compose.yml
+  - radar84/docker-compose.yml
   - watchtower/docker-compose.yml
+  - dcal/docker-compose.yml
 
 # Las tres redes las crea `make up` (target networks) de forma idempotente:
 #   edge        - ingress: Caddy y todo servicio que Caddy proxya

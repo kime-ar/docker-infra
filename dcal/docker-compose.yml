@@ -1,0 +1,158 @@
+# dCal (Dapta Calendars) — entorno de PRUEBAS local, espejo de lo que corre en Railway.
+#
+# Upstream: https://github.com/Dapta-Tech/dapta-calendars-slate (MIT)
+# No hay imágenes publicadas: se buildea desde el clon en repositories/, con los
+# MISMOS Dockerfiles que usa Railway (apps/api/Dockerfile, apps/web/Dockerfile).
+#
+#   cd ~/projects/repositories && git clone https://github.com/Dapta-Tech/dapta-calendars-slate.git dcal
+#   cd ~/projects/docker-infra && make init-dcal && make up
+#
+# Nombres prefijados (dcal-*): plane ya usa los servicios `api` y `web`, y con
+# `include:` los nombres de servicio son globales al proyecto.
+#
+# Topología:
+#   Caddy ─edge─► dcal-web:3000  (cal.garatortiz.xyz)
+#   Caddy ─edge─► dcal-api:4000  (cal-api.garatortiz.xyz, incluye /mcp)
+#   dcal-web ─edge─► dcal-api (API_URL interno, nunca sale por Caddy)
+#   dcal-api / dcal-migrate ─data─► postgres (DB `dcal`, rol `dcal_app`) y mailpit (SMTP)
+
+networks:
+  edge:
+    external: true
+  data:
+    external: true
+
+x-dcal-build-api: &dcal-build-api
+  context: ${DCAL_REPO_PATH:-../../repositories/dcal}
+  dockerfile: apps/api/Dockerfile
+
+x-dcal-db-url: &dcal-db-url
+  DATABASE_URL: postgresql://dcal_app:${DCAL_DB_PASSWORD:?Definí DCAL_DB_PASSWORD en .env}@postgres:5432/dcal
+
+services:
+  # One-shot: migraciones Drizzle (crea btree_gist + schema). Mismo patrón que el
+  # docker-compose.prod.yml upstream; en Railway esto es el pre-deploy del API.
+  dcal-migrate:
+    build: *dcal-build-api
+    image: kime/dcal-api:local
+    container_name: dcal-migrate
+    command:
+      - node_modules/tsx/dist/cli.mjs
+      - --tsconfig
+      - tsconfig.runtime.json
+      - node_modules/@slate/db/src/cli/migrate.ts
+    environment:
+      <<: *dcal-db-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - data
+
+  dcal-api:
+    build: *dcal-build-api
+    image: kime/dcal-api:local
+    container_name: dcal-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dcal-migrate:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
+    environment:
+      <<: *dcal-db-url
+      # AUTH_PROVIDER=local es un stub SIN autenticación y la API se niega a
+      # bootear con él bajo NODE_ENV=production. Para pruebas en LAN va así;
+      # en Railway hace falta AUTH_PROVIDER=workos + JWT_SECRET (ver notas).
+      NODE_ENV: development
+      AUTH_PROVIDER: local
+      API_PORT: "4000"
+      PUBLIC_APP_URL: https://cal.garatortiz.xyz
+      API_PUBLIC_URL: https://cal-api.garatortiz.xyz
+      MCP_PUBLIC_URL: https://cal-api.garatortiz.xyz/mcp
+      # Un hop de proxy delante (Caddy), igual que el edge de Railway.
+      RATE_LIMIT_TRUSTED_PROXY_HOPS: "1"
+      INTERNAL_API_SECRET: ${DCAL_INTERNAL_API_SECRET:?Definí DCAL_INTERNAL_API_SECRET en .env (min 32 chars)}
+      INTEGRATION_ENCRYPTION_KEY: ${DCAL_INTEGRATION_ENCRYPTION_KEY:?Definí DCAL_INTEGRATION_ENCRYPTION_KEY en .env (openssl rand -base64 32)}
+      # Mails a Mailpit: se ven en https://mail.garatortiz.xyz
+      EMAIL_PROVIDER: smtp
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_SECURE: "false"
+      MAIL_FROM_EMAIL: ${DCAL_MAIL_FROM_EMAIL:-agenda@kime.ar}
+      MAIL_FROM_NAME: ${DCAL_MAIL_FROM_NAME:-Kime Agenda}
+      # Sin sync de Google/Outlook en el OSS (requiere backend externo /v1).
+      CALENDAR_PROVIDER: disabled
+    healthcheck:
+      # Imagen distroless: sin shell/curl/wget, el probe es el propio node.
+      test:
+        - CMD
+        - /nodejs/bin/node
+        - -e
+        - "fetch('http://127.0.0.1:4000/health/ready').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - data   # Postgres + Mailpit
+      - edge   # Caddy (cal-api.garatortiz.xyz) + egress (webhooks, HubSpot)
+
+  dcal-web:
+    build:
+      context: ${DCAL_REPO_PATH:-../../repositories/dcal}
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Se inlinea en build: fallback público. El server usa API_URL en runtime.
+        NEXT_PUBLIC_API_URL: https://cal-api.garatortiz.xyz
+        NEXT_PUBLIC_PRODUCT_NAME: ${DCAL_PRODUCT_NAME:-Kime Agenda}
+    image: kime/dcal-web:local
+    container_name: dcal-web
+    restart: unless-stopped
+    depends_on:
+      dcal-api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      # Red interna: así el web manda INTERNAL_API_SECRET y el rate limit cuenta
+      # por visitante (con la URL pública no lo manda).
+      API_URL: http://dcal-api:4000
+      INTERNAL_API_SECRET: ${DCAL_INTERNAL_API_SECRET}
+      RATE_LIMIT_TRUSTED_PROXY_HOPS: "1"
+      AUTH_PROVIDER: local
+      WEB_SESSION_SECRET: ${DCAL_WEB_SESSION_SECRET:?Definí DCAL_WEB_SESSION_SECRET en .env}
+      PUBLIC_APP_URL: https://cal.garatortiz.xyz
+      MCP_PUBLIC_URL: https://cal-api.garatortiz.xyz/mcp
+      API_PUBLIC_URL: https://cal-api.garatortiz.xyz
+      KEEP_ALIVE_TIMEOUT: "65000"
+      # Entorno de pruebas: fuera de buscadores.
+      NOINDEX: "1"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.status<500?0:1),()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - edge

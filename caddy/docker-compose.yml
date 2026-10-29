@@ -33,6 +33,8 @@ services:
       - N8N_CORS_ORIGIN=${N8N_CORS_ORIGIN:-https://n8n.garatortiz.xyz}
       - RELEASE_DASHBOARD_USER=${RELEASE_DASHBOARD_USER:?Definí RELEASE_DASHBOARD_USER en .env}
       - RELEASE_DASHBOARD_PASSWORD_HASH=${RELEASE_DASHBOARD_PASSWORD_HASH:?Definí RELEASE_DASHBOARD_PASSWORD_HASH en .env}
+      - RADAR84_USER=${RADAR84_USER:?Definí RADAR84_USER en .env}
+      - RADAR84_PASSWORD_HASH=${RADAR84_PASSWORD_HASH:?Definí RADAR84_PASSWORD_HASH en .env}
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/config/"]
       interval: 30s
@@ -60,3 +62,6 @@ services:
           - sonar.garatortiz.xyz
           - git.garatortiz.xyz
           - releases.garatortiz.xyz
+          - radar84.garatortiz.xyz
+          - cal.garatortiz.xyz
+          - cal-api.garatortiz.xyz

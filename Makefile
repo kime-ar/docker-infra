@@ -1,4 +1,4 @@
-.PHONY: help up down restart restart-one logs ps clean clean-all pull init-minio migrate-legacy migrate-caddy backup backup-cron networks
+.PHONY: help up down restart restart-one logs ps clean clean-all pull init-minio migrate-legacy migrate-caddy backup backup-cron networks init-dcal dcal-up dcal-update
 
 # ==========================================
 # Variables Globales
@@ -27,6 +27,9 @@ help:
 	@echo "  make backup-cron     - Instala cron diario de backup (03:30)"
 	@echo "  make clean           - Apaga contenedores y elimina recursos huérfanos del proyecto"
 	@echo "  make clean-all       - ⚠️  Limpieza destructiva de TODO el sistema Docker"
+		@echo "  make init-dcal       - Crea base dcal + rol dcal_app + btree_gist en Postgres"
+	@echo "  make dcal-up         - Build + levanta dCal (migrate, api, web)"
+	@echo "  make dcal-update     - git pull del clon de dCal + rebuild + up"
 
 networks:
 	@docker network inspect edge >/dev/null 2>&1 || docker network create edge
@@ -92,3 +95,18 @@ clean-all:
 	@echo "⚠️  Esto eliminará imágenes, contenedores y volúmenes de TODO el sistema Docker."
 	@read -p "Escribí 'yes' para continuar: " confirm && [ "$$confirm" = "yes" ] || (echo "Cancelado." && exit 1)
 	sudo docker system prune -a --volumes
+
+DCAL_REPO ?= ../repositories/dcal
+DCAL_SERVICES = dcal-migrate dcal-api dcal-web
+
+init-dcal:
+	@bash scripts/init-dcal-db.sh
+
+dcal-up: networks
+	@echo "📅 Build + up de dCal..."
+	$(DOCKER) up -d --build $(DCAL_SERVICES)
+
+dcal-update:
+	@test -d "$(DCAL_REPO)/.git" || (echo "No encuentro el clon en $(DCAL_REPO)"; exit 1)
+	git -C "$(DCAL_REPO)" pull --ff-only
+	$(MAKE) dcal-up

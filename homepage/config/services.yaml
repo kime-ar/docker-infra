@@ -77,6 +77,14 @@
         description: Bandeja de pruebas SMTP
         server: my-docker
         container: mailpit
+    
+    - dCal:
+        href: https://cal.garatortiz.xyz
+        icon: mdi-calendar-clock
+        description: Agenda para agentes (MCP) · pruebas pre-Railway
+        ping: cal.garatortiz.xyz
+        server: my-docker
+        container: dcal-web
 
 - Apps Kime:
     - Kime App:
@@ -111,6 +119,8 @@
 
     - Radar84:
         href: https://radar84.garatortiz.xyz
-        icon: mdi-shield-account-outline
-        description: Panel admin (host :3509)
+        icon: mdi-radar
+        description: Ideas de contenido
         ping: radar84.garatortiz.xyz
+        server: my-docker
+        container: radar84

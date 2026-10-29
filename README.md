@@ -18,7 +18,7 @@ Internet / LAN
       │
       ▼
    [Caddy]  ── edge ──► Homepage, n8n, Forgejo, Langfuse, SonarQube,
-                         Release Dashboard, Uptime Kuma, Mailpit UI,
+                         Release Dashboard, Radar84, Uptime Kuma, Mailpit UI,
                          MinIO, Portainer
       │
       │   (solo consumidores de datos; Caddy no llega a Postgres)
@@ -35,7 +35,7 @@ Internet / LAN
 | `dev-network` | Red permanente para apps externas en `repositories/` |
 | `ci-jobs` | Jobs del runner de Forgejo. Alcanzan Forgejo + SonarQube; **no** Postgres/Redis/MinIO |
 
-**Stack:** Caddy · Postgres 16 + pgvector · Redis 7 · MinIO · Forgejo + runner · n8n · Langfuse · SonarQube · Release Dashboard · Homepage (vía docker-socket-proxy) · Uptime Kuma · Mailpit · Portainer (opcional) · Watchtower (solo servicios con label).
+**Stack:** Caddy · Postgres 16 + pgvector · Redis 7 · MinIO · Forgejo + runner · n8n · Langfuse · SonarQube · Release Dashboard · Radar84 · Homepage (vía docker-socket-proxy) · Uptime Kuma · Mailpit · Portainer (opcional) · Watchtower (solo servicios con label).
 
 **Prácticas aplicadas:** secretos solo en `.env`, roles de Postgres por app, usuario S3 dedicado para Langfuse, límites de recursos, healthchecks en cascada, backups automatizables, imágenes pineadas.
 
@@ -159,7 +159,9 @@ Dominios (TLS Let's Encrypt vía Cloudflare DNS; tráfico en LAN):
 | https://blog.garatortiz.xyz | Blog | `:3506` |
 | https://lab.garatortiz.xyz | Lab | `:3507` |
 | https://aka.garatortiz.xyz | Aka | `:3508` |
-| https://radar84.garatortiz.xyz | Radar84 | `:3509` |
+| https://radar84.garatortiz.xyz | Radar84 | `radar84:3000` (basic auth) |
+| https://cal.garatortiz.xyz | dCal web | `dcal-web:3000` |
+| https://cal-api.garatortiz.xyz | dCal API + MCP | `dcal-api:4000` |
 | `host:2323` | Forgejo SSH | — |
 
 ---
@@ -217,7 +219,7 @@ Todos los comandos se ejecutan desde la raíz del repo (`docker-infra/`).
 
 Nombres de servicio útiles para `app=`:
 
-`postgres` · `redis` · `minio` · `mailpit` · `caddy` · `server` (Forgejo) · `runner` · `n8n` · `langfuse-web` · `langfuse-worker` · `sonarqube` · `homepage` · `docker-socket-proxy` · `uptime-kuma` · `release-dashboard` · `watchtower`
+`postgres` · `redis` · `minio` · `mailpit` · `caddy` · `server` (Forgejo) · `runner` · `n8n` · `langfuse-web` · `langfuse-worker` · `sonarqube` · `homepage` · `docker-socket-proxy` · `uptime-kuma` · `release-dashboard` · `radar84` · `watchtower` · `dcal-api` · `dcal-web`
 
 ### Datos y provisión
 

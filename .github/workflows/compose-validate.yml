@@ -56,4 +56,8 @@ jobs:
             -e CLOUDFLARE_API_TOKEN=dummy \
             -e HOST_IP=127.0.0.1 \
             -e N8N_CORS_ORIGIN=https://n8n.garatortiz.xyz \
+            -e RELEASE_DASHBOARD_USER=ci \
+            -e RELEASE_DASHBOARD_PASSWORD_HASH=dummy \
+            -e RADAR84_USER=ci \
+            -e RADAR84_PASSWORD_HASH=dummy \
             caddy:2.10.2 caddy validate --config /etc/caddy/Caddyfile
