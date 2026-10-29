@@ -1,142 +1,145 @@
-# Bloque global — token Cloudflare con Zone:DNS:Edit sobre garatortiz.xyz
-# Certificados Let's Encrypt vía DNS challenge (válidos en LAN; no requiere
-# exponer el lab a Internet). Registros A → IP LAN del servidor, proxy OFF.
+# =============================================================================
+# Kime Infra — Caddyfile
+#
+# DNS (Cloudflare, proxy OFF / nube gris), todo a la IP LAN del servidor:
+#   A  *        → IP LAN     (cubre cualquier <x>.garatortiz.xyz)
+#   A  *.admin  → IP LAN     (previews: <pr>.admin.garatortiz.xyz)
+# Los registros explícitos que apuntan a otro lado (Vercel, MX, TXT) ganan
+# sobre el comodín: no tocarlos.
+#
+# TLS: dos certificados comodín de Let's Encrypt vía DNS challenge. En
+# Certificate Transparency (crt.sh) solo aparecen *.garatortiz.xyz y
+# *.admin.garatortiz.xyz, no la lista de servicios.
+#
+# Alta de un servicio nuevo = UNA línea en la sección que corresponda:
+#   import svc  <sub> <upstream>     contenedor en la red edge
+#   import host <sub> <puerto>       app corriendo en el host (rango 3500+)
+# y, si otro contenedor lo tiene que alcanzar por https, el alias en
+# caddy/docker-compose.yml (Docker DNS no entiende comodines).
+# =============================================================================
 {
-    acme_dns cloudflare {$CLOUDFLARE_API_TOKEN}
+	acme_dns cloudflare {$CLOUDFLARE_API_TOKEN}
 }
 
-(noindex) {
-    header X-Robots-Tag "noindex, nofollow"
+# --- Snippets ----------------------------------------------------------------
+
+# Servicio en Docker: import svc <subdominio> <upstream>
+(svc) {
+	@{args[0]} host {args[0]}.garatortiz.xyz
+	handle @{args[0]} {
+		reverse_proxy {args[1]}
+	}
 }
 
-# --- INFRAESTRUCTURA EN DOCKER ---
-
-home.garatortiz.xyz {
-    reverse_proxy homepage:3000
+# App en el host: import host <subdominio> <puerto>
+(host) {
+	@{args[0]} host {args[0]}.garatortiz.xyz
+	handle @{args[0]} {
+		reverse_proxy {$HOST_IP}:{args[1]}
+	}
 }
 
-status.garatortiz.xyz {
-    reverse_proxy uptime-kuma:3001
+# Igual que host, pero fuera de buscadores: import host_noindex <sub> <puerto>
+(host_noindex) {
+	@{args[0]} host {args[0]}.garatortiz.xyz
+	handle @{args[0]} {
+		header X-Robots-Tag "noindex, nofollow"
+		reverse_proxy {$HOST_IP}:{args[1]}
+	}
 }
 
-n8n.garatortiz.xyz {
-    @cors_preflight method OPTIONS
-    handle @cors_preflight {
-        header Access-Control-Allow-Origin {$N8N_CORS_ORIGIN}
-        header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        header Access-Control-Allow-Headers "Accept, Authorization, Content-Type, Origin, User-Agent, X-Requested-With"
-        header Access-Control-Max-Age "3600"
-        respond "" 204
-    }
-
-    handle {
-        header Access-Control-Allow-Origin {$N8N_CORS_ORIGIN}
-        header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        header Access-Control-Allow-Headers "Accept, Authorization, Content-Type, Origin, User-Agent, X-Requested-With"
-
-        reverse_proxy n8n:5678
-    }
+(n8n_cors) {
+	header Access-Control-Allow-Origin {$N8N_CORS_ORIGIN}
+	header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+	header Access-Control-Allow-Headers "Accept, Authorization, Content-Type, Origin, User-Agent, X-Requested-With"
 }
 
-docker.garatortiz.xyz {
-    reverse_proxy portainer:9443 {
-        transport http {
-            tls
-            tls_insecure_skip_verify
-        }
-    }
+# --- *.garatortiz.xyz --------------------------------------------------------
+
+*.garatortiz.xyz {
+	# ---------- Infraestructura ----------
+	import svc home homepage:3000
+	import svc status uptime-kuma:3001
+	import svc mail mailpit:8025
+	import svc s3 minio:9000
+	import svc minio minio:9001
+
+	# Portainer sirve HTTPS propio con certificado autofirmado
+	@docker host docker.garatortiz.xyz
+	handle @docker {
+		reverse_proxy portainer:9443 {
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
+
+	# ---------- Dev & CI ----------
+	import svc sonar sonarqube:9000
+
+	# Forgejo: sin buffering ni timeouts (git push/clone grandes, logs de Actions)
+	@git host git.garatortiz.xyz
+	handle @git {
+		reverse_proxy forgejo:3000 {
+			flush_interval -1
+			transport http {
+				read_timeout 0s
+				write_timeout 0s
+				response_header_timeout 0s
+			}
+		}
+	}
+
+	@releases host releases.garatortiz.xyz
+	handle @releases {
+		basic_auth {
+			{$RELEASE_DASHBOARD_USER} {$RELEASE_DASHBOARD_PASSWORD_HASH}
+		}
+		reverse_proxy release-dashboard:3000
+	}
+
+	# ---------- Datos & IA ----------
+	import svc ai langfuse-web:3000
+
+	@n8n host n8n.garatortiz.xyz
+	handle @n8n {
+		import n8n_cors
+		@preflight method OPTIONS
+		handle @preflight {
+			header Access-Control-Max-Age "3600"
+			respond 204
+		}
+		handle {
+			reverse_proxy n8n:5678
+		}
+	}
+
+	# ---------- Apps ----------
+	import svc cal dcal-web:3000
+	import svc cal-api dcal-api:4000
+
+	# ---------- Apps / APIs en el host (puertos desde 3500) ----------
+	import host api-local 3500
+	import host admin 3501
+	import host kime 3502
+	import host_noindex landing 3503
+	import host loyalty 3504
+	import host cows 3505
+	import host blog 3506
+	import host lab 3507
+	import host aka 3508
+	import host radar84 3509
+
+	# Subdominio sin servicio (typos, restos viejos): 404 y fuera de buscadores
+	handle {
+		header X-Robots-Tag "noindex, nofollow"
+		respond "Not found" 404
+	}
 }
 
-git.garatortiz.xyz {
-    reverse_proxy forgejo:3000 {
-        flush_interval -1
+# --- *.admin.garatortiz.xyz (otro nivel: otro certificado comodín) ----------
 
-        transport http {
-            read_timeout 0s
-            write_timeout 0s
-            response_header_timeout 0s
-        }
-    }
-}
-
-releases.garatortiz.xyz {
-    basic_auth {
-        {$RELEASE_DASHBOARD_USER} {$RELEASE_DASHBOARD_PASSWORD_HASH}
-    }
-    reverse_proxy release-dashboard:3000
-}
-
-ai.garatortiz.xyz {
-    reverse_proxy langfuse-web:3000
-}
-
-mail.garatortiz.xyz {
-    reverse_proxy mailpit:8025
-}
-
-s3.garatortiz.xyz {
-    reverse_proxy minio:9000
-}
-
-minio.garatortiz.xyz {
-    reverse_proxy minio:9001
-}
-
-sonar.garatortiz.xyz {
-    reverse_proxy sonarqube:9000
-}
-
-cal.garatortiz.xyz {
-    reverse_proxy dcal-web:3000
-}
-
-cal-api.garatortiz.xyz {
-    reverse_proxy dcal-api:4000
-}
-
-# --- APPS / APIS EN EL HOST (puertos desde 3500) ---
-
-api-local.garatortiz.xyz {
-    reverse_proxy {$HOST_IP}:3500
-}
-
-admin.garatortiz.xyz, *.admin.garatortiz.xyz {
-    reverse_proxy {$HOST_IP}:3501
-}
-
-kime.garatortiz.xyz {
-    reverse_proxy {$HOST_IP}:3502
-}
-
-landing.garatortiz.xyz {
-    import noindex
-    reverse_proxy {$HOST_IP}:3503
-}
-
-loyalty.garatortiz.xyz {
-    reverse_proxy {$HOST_IP}:3504
-}
-
-cows.garatortiz.xyz {
-    reverse_proxy {$HOST_IP}:3505
-}
-
-blog.garatortiz.xyz {
-    reverse_proxy {$HOST_IP}:3506
-}
-
-lab.garatortiz.xyz {
-    reverse_proxy {$HOST_IP}:3507
-}
-
-aka.garatortiz.xyz {
-    reverse_proxy {$HOST_IP}:3508
-}
-
-radar84.garatortiz.xyz {
-    import noindex
-    basic_auth {
-        {$RADAR84_USER} {$RADAR84_PASSWORD_HASH}
-    }
-    reverse_proxy radar84:3000
+*.admin.garatortiz.xyz {
+	reverse_proxy {$HOST_IP}:3501
 }

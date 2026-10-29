@@ -51,13 +51,13 @@ jobs:
 
       - name: Validate Caddyfile
         run: |
+          docker build -t kime-caddy:ci caddy/
+          HASH="$(docker run --rm kime-caddy:ci caddy hash-password --plaintext ci)"
           docker run --rm \
             -v "$PWD/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
             -e CLOUDFLARE_API_TOKEN=dummy \
             -e HOST_IP=127.0.0.1 \
             -e N8N_CORS_ORIGIN=https://n8n.garatortiz.xyz \
             -e RELEASE_DASHBOARD_USER=ci \
-            -e RELEASE_DASHBOARD_PASSWORD_HASH=dummy \
-            -e RADAR84_USER=ci \
-            -e RADAR84_PASSWORD_HASH=dummy \
-            caddy:2.10.2 caddy validate --config /etc/caddy/Caddyfile
+            -e RELEASE_DASHBOARD_PASSWORD_HASH="$HASH" \
+            kime-caddy:ci caddy validate --config /etc/caddy/Caddyfile
